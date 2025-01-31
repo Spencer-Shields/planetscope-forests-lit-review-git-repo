@@ -1,9 +1,8 @@
 
-#booter function loads data/packages and sets up the environment. "df" is the base dataframe that gets worked on in subsequent sections
 
+#----Load packages and data and do initial cleaning
 { #RUN THIS
-  booter <- function() { #function that does all the initial loading, filtering etc. so I can quickly reset the environment if I change anything
-  
+
   #----load packages, load reference list, set working directory----
   
   library(tidyverse)
@@ -32,14 +31,6 @@
   library(cowplot)
   library(ggforce)
   
-  home_wd <- "C:/Users/Spencer/OneDrive/Desktop/UBC/MSc/Planetscope literature review/reference lists"
-  ubc_wd <- "C:/Users/spenshi/OneDrive/Desktop/UBC/MSc/Planetscope literature review/reference lists"
-  
-  if(dir.exists(ubc_wd)){ #automatically set working directory depending on if I'm working from my laptop or work desktop
-    wd <<- setwd(ubc_wd)
-  } else {
-    wd <<- setwd(home_wd)
-  }
   
   review_list <<- 'review_list_7.2.xlsx'
   
@@ -324,9 +315,6 @@
   
   application_colors <<- setNames(application_color_map$application_colors,
                                   application_color_map$Application_cleaned)
-}
-
-booter()
 
 df = df_sub} #RUN THIS
 
