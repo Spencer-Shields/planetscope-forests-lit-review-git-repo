@@ -336,7 +336,7 @@ year_df = splitter_counter(df$Publication.Year)
 #   geom_col() +
 #   labs(
 #     x = "Publication year",
-#     y = "Number of references",
+#     y = "Number of articles",
 #     fill = "Type") +
 #   theme_classic()
 # ##
@@ -351,7 +351,7 @@ year_plot = ggplot(year_df[year_df$b != 2024], aes(x = b, y = n)) +
   ) +
   labs(
     x = "Publication year",
-    y = "Number of references",
+    y = "Number of articles",
     fill = "Type") +
   ylim(0, ceiling(max(year_df$n)/5) * 5) +
   theme_classic()
@@ -373,7 +373,7 @@ pub_type_summ
 #---- Journals ----
 
 j_df = df_big %>%
-  group_by(`Publication Title`) %>%
+  group_by(`Publication.Title`) %>%
   summarise(n())
 
 #####---------------------------------- WHAT TYPE OF RESEARCH IS BEING DONE WITH Planetscope -------------------------------------
@@ -460,7 +460,7 @@ ggplot(biomes_summ, aes(x = reorder(b, desc(-n)), y = n, fill = Ecosystem_type))
   geom_col() +
   labs(
     x = "Terrestrial ecosystem",
-    y = "Number of references",
+    y = "Number of articles",
     fill = "Ecosystem type"
   ) +
   theme_classic() +
@@ -483,7 +483,7 @@ apps_summ = apps_df %>%
   rename(b = Application_cleaned)
   
 
-n_min_pubs = 3 #minimum number of publications that an application must appear in to receive its own entry in the graphs etc.
+n_min_pubs = 3 #minimum Number of articles that an application must appear in to receive its own entry in the graphs etc.
 
 n_apps_min = sum(apps_summ$n[apps_summ$n < n_min_pubs]) 
 
@@ -504,7 +504,7 @@ app_bargraph = ggplot(
   geom_col(fill = 'seagreen')+
   labs(
     x = "",
-    y = "Number of references"
+    y = "Number of articles"
   ) +
   theme_classic() +
   # scale_fill_manual(values = simple_plot_col) +
@@ -521,7 +521,7 @@ app_bargraph_long = ggplot(
   geom_col(fill = simple_plot_col)+
   labs(
     x = "",
-    y = "Number of references"
+    y = "Number of articles"
   ) +
   theme_classic() +
   # scale_fill_manual(values = simple_plot_col) +
@@ -571,9 +571,11 @@ ymax <- 90
 {
   ggplot() +
     geom_sf(data = world_merged, aes(fill = n)) +
-    scale_fill_viridis(option = 'H')+
+    scale_fill_viridis(
+      #option = 'H'
+      )+
     labs(
-      fill = 'Number of references') +
+      fill = 'Number of articles') +
     theme_minimal_grid()+
     coord_sf(crs= "+proj=robin")
     
@@ -648,7 +650,7 @@ ggplot(biomes_summ, aes(x = reorder(b, desc(-n)), y = n, fill = Ecosystem_type))
   geom_col() +
   labs(
     x = "Terrestrial ecosystem",
-    y = "Number of references",
+    y = "Number of articles",
     fill = "Ecosystem type"
   ) +
   theme_classic() +
@@ -667,7 +669,7 @@ ggplot(biomes_summ_2, aes(x = reorder(b, desc(-n)), y = n)) +
   geom_col(fill = simple_plot_col) +
   labs(
     # x = "Terrestrial ecosystem",
-    y = "Number of references",
+    y = "Number of articles",
   ) +
   theme_classic() +
   theme(axis.title.y = element_blank())+
@@ -797,7 +799,7 @@ ggplot(biomes_apps_summ %>% arrange(desc(biome_freq))
   labs(x = 'Application', y = 'Terrestrial ecosystem'
        , size = 'Publications'
   )+
-  scale_size(name = 'Number of publications', range = c(2,8), breaks = c(2,4,6,8,10))+
+  scale_size(name = 'Number of articles', range = c(2,8), breaks = c(2,4,6,8,10))+
   theme_minimal() +
   scale_y_discrete(labels = \(x) stringr::str_wrap(x, 40))+
   # scale_size_continuous(breaks = c(2,4,6,8,10))+
@@ -867,7 +869,7 @@ ggplot(biomes_apps_summ %>% arrange(desc(biome_freq))
         #                                            ))
     
     
-    area_summ = area_df %>% #get number of publications in each size class and scene size class
+    area_summ = area_df %>% #get Number of articles in each size class and scene size class
       group_by(size_class, scene_size_class) %>%
       summarise(count = n()) %>%
       merge(size_class_order) %>% #add size class ordering variable
@@ -876,24 +878,26 @@ ggplot(biomes_apps_summ %>% arrange(desc(biome_freq))
 
 #plot stacked bargraph
 {
-    ggplot(area_summ, aes(
-      x = size_class
-      , y = count
-      , fill = reorder(scene_size_class, -scene_size_class_order)
-    )) +
-      geom_bar(position = 'stack', stat='identity') +
-      labs(
-        # title = "Counts in Each Class",
-        x = expression("Area imaged with Planetscope (km"^2*")"),
-        y = "Number of references",
-        fill = 'Size class'
-      ) +
-      scale_fill_manual(values = c('powderblue', 'turquoise', 'turquoise2', 'steelblue2' ))+
-      # scale_fill_brewer(palette = 'Purples', direction = -1)+
-      # scale_x_continuous(labels = area_hist$class_lab, breaks = area_hist$class_no) +  # Customize x-axis labels
-      theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better visibility
-      }
+  ggplot(area_summ, aes(
+    x = size_class
+    , y = count
+    , fill = reorder(scene_size_class, -scene_size_class_order)
+  )) +
+    geom_bar(position = 'stack', stat='identity') +
+    labs(
+      # title = "Counts in Each Class",
+      x = expression("Area imaged with Planetscope (km"^2*")"),
+      y = "Number of articles",
+      fill = 'Size class'
+    ) +
+    # scale_fill_viridis(discrete = T, option = 'magma')+
+    # scale_fill_manual(values = c("#FC8D59", "#FEE08B", "#E6F598", "#99D594"))+
+    scale_fill_manual(values = rev(c('powderblue', 'turquoise', 'steelblue2', 'dodgerblue4')))+
+    # scale_fill_brewer(palette = 'Purples', direction = -1)+
+    # scale_x_continuous(labels = area_hist$class_lab, breaks = area_hist$class_no) +  # Customize x-axis labels
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better visibility
+}
 #median size of area imaged
 median(area_df$Total_area_imaged_km2_clean)
 
@@ -985,7 +989,7 @@ median(area_df$Total_area_imaged_km2_clean)
              , fill = 'lightsalmon3') +
     labs(
       x = expression("Average time between images (days)"),
-      y = "Number of references"
+      y = "Number of articles"
     ) +
     theme_classic() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -1140,25 +1144,37 @@ temp_res_df = df %>%
 {
   #with facet zoom***
   {
-    ggplot(temp_res_df,
+    
+    temp_p = ggplot(temp_res_df,
            aes(x = Revisit_cleaned
                ,y = Timeseries_length
                ,size = n_timeseries_dates)) +
+      annotate('rect', xmin = 0, xmax = 120, ymin = -Inf, ymax = 1200
+               ,alpha = 0.1
+               ,color = 'black'
+               )+
       geom_point(alpha = 0.5, color = simple_plot_col) +
       labs(
         x = 'Average revisit time (days)'
-        ,y = 'Total length of timeseries (days)'
+        ,y = 'Total length of time series (days)'
         ,size = 'Image days'
       )+
       scale_size(range = c(1.5,8), breaks = c(2,50,100,150,200))+
-      facet_zoom(xy = Revisit_cleaned <=100
+      facet_zoom(xy = Revisit_cleaned <=120
                  ,horizontal = F
+                 ,show.area = F
       )+
       theme_bw()+
       theme(
         panel.grid.major = element_blank(), # Remove major gridlines
         panel.grid.minor = element_blank()  # Remove minor gridlines
       )
+    
+    temp_pb = ggplot_build(temp_p)
+    temp_pb$data[[1]][4, 'alpha'] = 0
+    temp_pb$data[[1]][4, 'colour'] = 'white'
+    temp_pg = ggplot_gtable(temp_pb)
+    plot(temp_pg)
   }
   
   #with patchwork
@@ -1171,7 +1187,7 @@ temp_res_df = df %>%
       geom_point(alpha = 0.5) +
       labs(
         x = 'Average revisit time (days)'
-        ,y = 'Total length of timeseries (days)'
+        ,y = 'Total length of time series (days)'
         ,size = 'Image days'
       )+
       scale_color_manual(values = c('tomato3', 'steelblue3'))+
@@ -1189,7 +1205,7 @@ temp_res_df = df %>%
       geom_point(alpha = 0.5, color = 'steelblue3') +
       labs(
         x = 'Average revisit time (days)'
-        ,y = 'Total length of timeseries (days)'
+        ,y = 'Total length of time series (days)'
         ,size = 'Image days'
       )+
       scale_size(range = c(1.7,8))+
@@ -1244,7 +1260,7 @@ PS_use
 ggplot(PS_use, aes(x=b, y=n, fill=b)) +
   geom_bar(stat="identity") +
   geom_text(aes(label = n), position = position_stack(vjust=0.5)) +
-  labs(x = "Role of PS imagery", y = "Number of references") +
+  labs(x = "Role of PS imagery", y = "Number of articles") +
   scale_fill_brewer(palette = "Dark2") +
   theme_classic() +
   theme(legend.position = 'none')
@@ -1271,7 +1287,7 @@ ggplot(PS_use_year, aes(x = Publication.Year, y = count, color = PS_role, group 
   # geom_area()+
   labs(
     x = "Publication year",
-    y = "Number of references"
+    y = "Number of articles"
     # fill = "Type"  # Since you're using color, this can be removed
   ) +
   ylim(0, ceiling(max(PS_use_year$count) / 5) * 5) +
@@ -1296,7 +1312,7 @@ ggplot(data_year_role_summ, aes(x = Acquisition_years, y = count, color = PS_rol
   geom_line(size = line_size) +  # Uncomment this if you want to add lines
   labs(
     x = "Publication year",
-    y = "Number of references"
+    y = "Number of articles"
     # fill = "Type"  # Since you're using color, this can be removed
   ) +
   ylim(0, ceiling(max(data_year_role_summ$count) / 5) * 5) +
@@ -1326,7 +1342,7 @@ RS_df = df %>%
 # #replace ALOS-2 with PALSAR-2
 # rename(PALSAR_2 = ALOS_2) %>%
 # mutate(RS_systems = str_replace_all(RS_systems, 'ALOS-2', 'PALSAR-2'))
-nrow(RS_df) #number of publications that include other types of remote sensing data
+nrow(RS_df) #Number of articles that include other types of remote sensing data
 
 # updated_rs_col_names = rs_col_names %>% 
 #   str_replace_all('ALOS_1', 'PRISM') %>%
@@ -1355,7 +1371,7 @@ ggplot(RS_summ, aes(x = reorder(RS_systems, -tot_count), y = count, fill = sys_v
   geom_col() +
   labs(
     x = "Remote sensing system",
-    y = "Number of references",
+    y = "Number of articles",
     fill = "Type"
   ) +
   theme_classic() +
@@ -1499,7 +1515,7 @@ for(i in 1:nrow(rscompare2_df)){
   )
 }
 
-#get number of publications per application
+#get Number of articles per application
 compare_pubs_apps_summ = rscompare2_df %>%
   group_by(RS_compare_application) %>%
   summarise(n_application_pubs = n())
@@ -1540,12 +1556,12 @@ rscompare2_df_long = merge(rscompare2_df_long, title_id_df)
 
 #### stats and information about comparison publications
 
-# get number of publications per application
+# get Number of articles per application
 compare_pubs_apps_summ = rscompare2_df %>%
   group_by(RS_compare_application) %>%
   summarise(n_application_pubs = n())
 
-# number of publications which use different stats
+# Number of articles which use different stats
 compare_stats_summ = rscompare2_df %>% 
   group_by(compare_stat) %>%
   summarise(count = n())
@@ -2204,7 +2220,7 @@ rs_compare_pubs_summ = rscompare2_df_long %>%
     geom_col(fill = simple_plot_col) +  # Use geom_col for pre-summarized data
     facet_grid(vars(RS_compared)) +
     labs(x = "Planetscope analysis comparison"
-         , y = "Number of references"
+         , y = "Number of articles"
          # , title = "Comparison of Remote Sensing Datasets"
     ) +
     # scale_fill_manual(values = c('gold', 'lightgreen', 'skyblue'))+
@@ -2233,7 +2249,7 @@ rs_compare_pubs_summ = rscompare2_df_long %>%
       geom_col() +  # Use geom_col for pre-summarized data
       facet_grid(vars(RS_compared)) +
       labs(x = "Planetscope analysis comparison"
-           , y = "Number of references"
+           , y = "Number of articles"
            # , title = "Comparison of Remote Sensing Datasets"
       ) +
       # scale_fill_manual(values = c('gold', 'lightgreen', 'skyblue'))+
@@ -2255,7 +2271,7 @@ rs_compare_pubs_summ = rscompare2_df_long %>%
       geom_col() +  # Use geom_col for pre-summarized data
       facet_grid(vars(RS_compared)) +
       labs(x = "Planetscope analysis comparison"
-           , y = "Number of references"
+           , y = "Number of articles"
            # , title = "Comparison of Remote Sensing Datasets"
       ) +
       scale_fill_manual(values = application_colors)+
@@ -2346,7 +2362,7 @@ ggplot(feats_summ, aes(x = reorder(relabel, -n), y = n)) +
   geom_col(fill = simple_plot_col) +
   labs(
     x = "Spectral features",
-    y = "Number of references",
+    y = "Number of articles",
     fill = "Type") +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))   # Rotate x-axis labels
@@ -2615,7 +2631,7 @@ df_textures = df_indic %>%
     theme()+
     labs(
       x = 'Regression'
-      ,y = 'Number of publications'
+      ,y = 'Number of articles'
     )+
     lims(y = c(0, max(methods_summ$count)))+
     coord_flip()
@@ -2635,7 +2651,7 @@ df_textures = df_indic %>%
   
 }
 
-#count number of publications that report specific model performance metrics
+#count Number of articles that report specific model performance metrics
 {
   stat_count_df = df %>%
     filter(
@@ -2778,6 +2794,7 @@ df_textures = df_indic %>%
     #summarize model performance per algorithm and application
     
     model_perf_summ = model_perf_df %>%
+      filter(performance_stat %in% c('OA', 'r2')) %>% #only calculate for r2 and Overall accuracy
       group_by(Application_to_agg, method_algorithm_to_agg, Approach_reclassed) %>%
       summarise(mean_performance = mean(PS_model_performance_to_aggregate))
     
@@ -2804,10 +2821,10 @@ df_textures = df_indic %>%
       filter(Approach_reclassed %in% c('Classification', 'Regression')) %>%
       #only keep distinct combinations of approach, method, application, and Title
       distinct(Title, Application_cleaned, method_algorithm_cleaned, Approach_reclassed, .keep_all = T) %>%
-      #summarise number of publications for each combination of Application and Method
+      #summarise Number of articles for each combination of Application and Method
       group_by(Application_cleaned, Approach_reclassed, method_algorithm_cleaned) %>%
       summarise(app_approach_method_count = n()) %>%
-      #add number of publications for each algorithm and application, use these figures to make text labels for the axes
+      #add Number of articles for each algorithm and application, use these figures to make text labels for the axes
       left_join(tibble(Application_cleaned = analysis_apps_summ$Application_cleaned, app_freq = analysis_apps_summ$count)) %>%
       left_join(methods_summ) %>%
       mutate(Application_label = paste0(Application_cleaned, ' (',app_freq,')'),
@@ -2856,7 +2873,7 @@ df_textures = df_indic %>%
       labs(x = 'Application', 
            y = 'Algorithm or method'
            , color = 'Mean model performance'
-           , size = 'Number of publications'
+           , size = 'Number of articles'
       )+
       theme_minimal() +
       # scale_y_discrete(labels = \(x) stringr::str_wrap(x, 40))+
@@ -2865,11 +2882,11 @@ df_textures = df_indic %>%
                  ,axis.labels = 'all_x'
                  , scales = 'free_y'
       ) +
-      scale_size(name = 'Number of publications', range = c(2,7.9), breaks = c(3,6,9,12,15))+
+      scale_size(name = 'Number of articles', range = c(2,7.9), breaks = c(3,6,9,12,15))+
       labs(x = 'Application', 
            y = 'Algorithm or method'
            , color = 'Mean model performance'
-           , size = 'Number of publications'
+           , size = 'Number of articles'
       )+
       theme(axis.text.x = element_text(
         angle = 45
