@@ -1,7 +1,7 @@
 
 
 #----Load packages and data and do initial cleaning
-{ #RUN THIS
+{
 
   #----load packages, load reference list, set working directory----
   
@@ -30,6 +30,7 @@
   library(GGally)
   library(cowplot)
   library(ggforce)
+  library(ggh4x)
   
   
   review_list <<- 'review_list_7.2.xlsx'
@@ -316,7 +317,7 @@
   application_colors <<- setNames(application_color_map$application_colors,
                                   application_color_map$Application_cleaned)
 
-df = df_sub} #RUN THIS
+df = df_sub} 
 
 #####---------------------------------- Publication info -------------------------------------
 #---- Eligibility ----
@@ -776,10 +777,7 @@ biomes_apps_summ = biomes_apps_df %>%
   }
 
 #balloon plot
-
-
-# ggballoonplot(biomes_apps_summ, x = 'Application_cleaned', y = 'biomes_2', size = 'count')
-
+{
 ggplot(biomes_apps_summ %>% arrange(desc(biome_freq))
        , aes(x = reorder(Application_label, -app_freq)
              , y = 
@@ -809,6 +807,7 @@ ggplot(biomes_apps_summ %>% arrange(desc(biome_freq))
     ,hjust = 1)
     # ,legend.position = 'none'
   )
+}
 
 #####---------------------------------- DATA CHARACTERISTICS -------------------------------------
 #---- Spatial characteristics----
@@ -1177,43 +1176,6 @@ temp_res_df = df %>%
     plot(temp_pg)
   }
   
-  #with patchwork
-  {
-    temp_all = ggplot(temp_res_df %>% mutate(zoomed = ifelse(Revisit_cleaned <= 100, T, F)),
-                     aes(x = Revisit_cleaned
-                         ,y = Timeseries_length
-                         ,size = n_timeseries_dates
-                         ,color = zoomed)) +
-      geom_point(alpha = 0.5) +
-      labs(
-        x = 'Average revisit time (days)'
-        ,y = 'Total length of time series (days)'
-        ,size = 'Image days'
-      )+
-      scale_color_manual(values = c('tomato3', 'steelblue3'))+
-      scale_size(range = c(1.7,8))+
-      theme_classic() +
-      theme(
-        axis.title.x = element_blank()
-      ) +
-      guides(color = 'none')
-    
-    temp_zoomed = ggplot(temp_res_df %>% filter(Revisit_cleaned <= 100),
-                     aes(x = Revisit_cleaned
-                         ,y = Timeseries_length
-                         ,size = n_timeseries_dates)) +
-      geom_point(alpha = 0.5, color = 'steelblue3') +
-      labs(
-        x = 'Average revisit time (days)'
-        ,y = 'Total length of time series (days)'
-        ,size = 'Image days'
-      )+
-      scale_size(range = c(1.7,8))+
-      theme_classic() +
-      guides(size = 'none')
-    
-    temp_all/temp_zoomed
-  }
 }
 
 #---- Output resolution ----
@@ -1332,100 +1294,150 @@ ggplot(data_year_role_summ, aes(x = Acquisition_years, y = count, color = PS_rol
 
 #---- other RS systems plus complementary versus comparison ----
 
-RS_df = df %>%
-  filter(!is.na(RS_systems)) %>%
-  filter(RS_systems != '-') 
-# %>%
-# #replace ALOS-1 with PRISM (to be more precise, like saying MODIS instead of Terra)
-# rename(PRISM = ALOS_1) %>%
-# mutate(RS_systems = str_replace_all(RS_systems, 'ALOS-1', 'PRISM')) %>%
-# #replace ALOS-2 with PALSAR-2
-# rename(PALSAR_2 = ALOS_2) %>%
-# mutate(RS_systems = str_replace_all(RS_systems, 'ALOS-2', 'PALSAR-2'))
-nrow(RS_df) #Number of articles that include other types of remote sensing data
+#data prep
+{
+  RS_df = df %>%
+    filter(!is.na(RS_systems)) %>%
+    filter(RS_systems != '-') 
+  # %>%
+  # #replace ALOS-1 with PRISM (to be more precise, like saying MODIS instead of Terra)
+  # rename(PRISM = ALOS_1) %>%
+  # mutate(RS_systems = str_replace_all(RS_systems, 'ALOS-1', 'PRISM')) %>%
+  # #replace ALOS-2 with PALSAR-2
+  # rename(PALSAR_2 = ALOS_2) %>%
+  # mutate(RS_systems = str_replace_all(RS_systems, 'ALOS-2', 'PALSAR-2'))
+  nrow(RS_df) #Number of articles that include other types of remote sensing data
+  
+  # updated_rs_col_names = rs_col_names %>% 
+  #   str_replace_all('ALOS_1', 'PRISM') %>%
+  #   str_replace_all('ALOS_2', 'PALSAR_2')
+  
+  RS_summ = RS_df %>%
+    cSplit(splitCols = c('RS_systems'), direction = 'long', sep = ', ') %>%
+    cSplit(splitCols = rs_col_names, direction = 'long', sep = ', ') %>%
+    pivot_longer(cols = rs_col_names, names_to = 'sys', values_to = 'sys_value') %>%
+    mutate(sys = str_replace_all(sys, '\\.', ' ')) %>%
+    mutate(sys = str_replace_all(sys,'_', '-')) %>%
+    filter(sys == RS_systems) %>%
+    filter(!is.na(sys_value)) %>%
+    mutate(sys_value = ifelse(sys_value == 1, 'Complementary', 'Comparison')) %>%
+    group_by(RS_systems, sys_value) %>%
+    summarize(count = n())
+  
+  RS_summ_tot = RS_summ %>%
+    group_by(RS_systems) %>%
+    summarise(tot_count = sum(count))
+  
+  RS_summ = merge(RS_summ, RS_summ_tot)
+  
+  RS_summ$RS_systems = RS_summ$RS_systems %>%
+    str_replace_all('FORMSAT-2', 'FORMOSAT-2') %>%
+    str_replace_all('Sentinel 5-p', 'Sentinel-5p')
+  
+  #information on remote sensing systems in the review list 
+  {
+    rs_type_df = tribble(
+      ~RS_systems,                 ~platform_type, ~sensor_type,    #~spatial_resolution_m, ~revisit_time_days,
+      "PRISM",                    "Satellite",    "Panchromatic",   #2.5,                 46,
+      "PALSAR-2",                    "Satellite",    "RADAR",         
+      "Aerial RGB",                "Aerial",       "RGB",
+      "Aerial hyperspectral",      "Aerial",       "Hyperspectral",
+      "Aerial laser scanning",     "Aerial",       "LiDAR",
+      "Aerial multispectral",      "Aerial",       "Multispectral",
+      "FORMOSAT-2",                 "Satellite",    "Multispectral",
+      "GEDI",                      "Satellite",    "LiDAR",
+      "Ground-based RGB",          "Ground-based", "RGB",
+      "Ground-based multispectral","Ground-based", "Multispectral",
+      "KOMPSAT-3",                 "Satellite",    "Multispectral",
+      "Landsat-4",                 "Satellite",    "Multispectral",
+      "Landsat-5",                 "Satellite",    "Multispectral",
+      "Landsat-7",                 "Satellite",    "Multispectral",
+      "Landsat-8",                 "Satellite",    "Multispectral",
+      "MODIS",                     "Satellite",    "Multispectral",
+      "PROBA-V",                   "Satellite",    "Multispectral",
+      "Point dendrometer",         "Ground-based", "Other",
+      "Rapideye",                  "Satellite",    "Multispectral",
+      "SPOT",                      "Satellite",    "Multispectral",
+      "SRTM",                      "Satellite",    "RADAR",
+      "Sentinel-1",                "Satellite",    "RADAR",
+      "Sentinel-2",                "Satellite",    "Multispectral",
+      "Terrestrial laser scanning","Ground-based", "LiDAR",
+      "UAV multispectral",         "UAV",          "Multispectral",
+      "UAV RGB",                   "UAV",          "RGB",
+      "WorldView-2",               "Satellite",    "Multispectral",
+      "Worldview-1",               "Satellite",    "Multispectral",
+      "ASTER",                     "Satellite",    "Multispectral",
+      "CBERS-4A",                  "Satellite",    "Multispectral",
+      "CORONA",                    "Satellite",    "RGB",
+      "ICESat",                    "Satellite",    "LiDAR",
+      "Sentinel-5p",               "Satellite",    "Multispectral",
+      "SMAP",                      "Satellite",    "RADAR",
+      "Harmonized Landsat Sentinel-2", "Satellite","Multispectral"
+    )
+  }
+  
+  #check if the summary table has every system mentioned in the review list
+  setdiff(RS_summ$RS_systems, rs_type_df$RS_systems)
+  
+  #add system information to RS_summ dataframe
+  RS_summ = merge(RS_summ, rs_type_df)
+  
+  #recode sensor/platform information
+  
+  RS_summ = RS_summ %>%
+    mutate(sensor_type = ifelse(sensor_type %in% c('Multispectral', 'Hyperspectral', 'Panchromatic', 'RGB')
+                                , 'Optical'
+                                , sensor_type)) %>%
+    mutate(platform_type = str_replace_all(platform_type, 'Ground-based', 'Terrestrial'),
+           RS_systems = str_replace_all(RS_systems, 'Ground-based', 'Terrestrial')) %>%
+    mutate(RS_systems = str_replace_all(RS_systems, 'Aerial laser scanning', 'Airborne laser scanning'))
+}
 
-# updated_rs_col_names = rs_col_names %>% 
-#   str_replace_all('ALOS_1', 'PRISM') %>%
-#   str_replace_all('ALOS_2', 'PALSAR_2')
-
-RS_summ = RS_df %>%
-  cSplit(splitCols = c('RS_systems'), direction = 'long', sep = ', ') %>%
-  cSplit(splitCols = rs_col_names, direction = 'long', sep = ', ') %>%
-  pivot_longer(cols = rs_col_names, names_to = 'sys', values_to = 'sys_value') %>%
-  mutate(sys = str_replace_all(sys, '\\.', ' ')) %>%
-  mutate(sys = str_replace_all(sys,'_', '-')) %>%
-  filter(sys == RS_systems) %>%
-  filter(!is.na(sys_value)) %>%
-  mutate(sys_value = ifelse(sys_value == 1, 'Complementary', 'Comparison')) %>%
-  group_by(RS_systems, sys_value) %>%
-  summarize(count = n())
-
-RS_summ_tot = RS_summ %>%
-  group_by(RS_systems) %>%
-  summarise(tot_count = sum(count))
-
-RS_summ = merge(RS_summ, RS_summ_tot)
-
-#
-ggplot(RS_summ, aes(x = reorder(RS_systems, -tot_count), y = count, fill = sys_value)) +
-  geom_col() +
-  labs(
-    x = "Remote sensing system",
-    y = "Number of articles",
-    fill = "Type"
-  ) +
-  theme_classic() +
-  scale_fill_manual(values = bicolor_plot_col) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+   # Rotate x-axis labels
-  coord_flip()  # Flip the coordinates to make y-axis horizontal
-
-
-#---- information on remote sensing systems in the review list ----
-
-rs_type_df = tribble(
-  ~RS_systems,                 ~platform_type, ~sensor_type,    #~spatial_resolution_m, ~revisit_time_days,
-  "PRISM",                    "Satellite",    "Panchromatic",   #2.5,                 46,
-  "PALSAR-2",                    "Satellite",    "RADAR",         
-  "Aerial RGB",                "Aerial",       "RGB",
-  "Aerial hyperspectral",      "Aerial",       "Hyperspectral",
-  "Aerial laser scanning",     "Aerial",       "LiDAR",
-  "Aerial multispectral",      "Aerial",       "Multispectral",
-  "FORMOSAT-2",                 "Satellite",    "Multispectral",
-  "GEDI",                      "Satellite",    "LiDAR",
-  "Ground-based RGB",          "Ground-based", "RGB",
-  "Ground-based multispectral","Ground-based", "Multispectral",
-  "KOMPSAT-3",                 "Satellite",    "Multispectral",
-  "Landsat-4",                 "Satellite",    "Multispectral",
-  "Landsat-5",                 "Satellite",    "Multispectral",
-  "Landsat-7",                 "Satellite",    "Multispectral",
-  "Landsat-8",                 "Satellite",    "Multispectral",
-  "MODIS",                     "Satellite",    "Multispectral",
-  "PROBA-V",                   "Satellite",    "Multispectral",
-  "Point dendrometer",         "Ground-based", "Other",
-  "Rapideye",                  "Satellite",    "Multispectral",
-  "SPOT",                      "Satellite",    "Multispectral",
-  "SRTM",                      "Satellite",    "RADAR",
-  "Sentinel-1",                "Satellite",    "RADAR",
-  "Sentinel-2",                "Satellite",    "Multispectral",
-  "Terrestrial laser scanning","Ground-based", "LiDAR",
-  "UAV multispectral",         "UAV",          "Multispectral",
-  "UAV RGB",                   "UAV",          "RGB",
-  "WorldView-2",               "Satellite",    "Multispectral",
-  "Worldview-1",               "Satellite",    "Multispectral",
-  "ASTER",                     "Satellite",    "Multispectral",
-  "CBERS-4A",                  "Satellite",    "Multispectral",
-  "CORONA",                    "Satellite",    "RGB",
-  "ICESat",                    "Satellite",    "LiDAR",
-  "Sentinel-5p",               "Satellite",    "Multispectral",
-  "SMAP",                      "Satellite",    "RADAR",
-  "Harmonized Landsat Sentinel-2", "Satellite","Multispectral"
-)
-
-#check if the summary table has every system mentioned in the review list
-setdiff(RS_summ$RS_systems, rs_type_df$RS_systems)
-
-#add system information to RS_summ dataframe
-RS_summ = merge(RS_summ, rs_type_df)
+#plotting
+{
+  #stacked bar chart
+  {
+    ggplot(RS_summ, aes(x = reorder(RS_systems, tot_count), y = count, fill = sys_value)) +
+      geom_col() +
+      labs(
+        x = "Remote sensing system",
+        y = "Number of articles",
+        fill = "Type"
+      ) +
+      theme_classic() +
+      scale_fill_manual(values = bicolor_plot_col) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))+   # Rotate x-axis labels
+      coord_flip()  # Flip the coordinates to make y-axis horizontal
+  }
+  
+  #stacked bar chart facet grid
+  {
+    RS_summ$platform_type = factor(RS_summ$platform_type, levels = c('Satellite', 'Aerial', 'Terrestrial', 'UAV'))
+    RS_summ$sensor_type = factor(RS_summ$sensor_type, levels = c('Optical', 'LiDAR', 'RADAR'))
+    
+    ggplot(RS_summ, aes(x = reorder(RS_systems, tot_count), y = count, fill = sys_value)) +
+      geom_col() +
+      labs(
+        x = "Remote sensing system",
+        y = "Number of articles",
+        fill = "Type of use"
+      ) +
+      theme_classic() +
+      scale_fill_manual(values = bicolor_plot_col) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)
+            , panel.background = element_rect(fill = NA, color = "black")
+            ,strip.background = element_blank())+   # Rotate x-axis labels
+      # facet_wrap(facets = vars(sensor_type, platform_type)
+      #            , scales = 'free_y')+
+      # facet_grid(rows = vars(platform_type), cols = vars(sensor_type), scales = 'free_y', space = 'free_y')+
+      facet_nested('Platform type'*platform_type ~ 'Sensor type'*sensor_type
+                   , scales = 'free_y'
+                   , space = 'free_y'
+                   , nest_line = element_line())+
+      coord_flip()  # Flip the coordinates to make y-axis horizontal
+  }
+  
+}
 
 #---- Analysis performance versus other RS systems REDO ----
 
