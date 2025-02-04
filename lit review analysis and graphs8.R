@@ -1335,46 +1335,8 @@ ggplot(data_year_role_summ, aes(x = Acquisition_years, y = count, color = PS_rol
     str_replace_all('Sentinel 5-p', 'Sentinel-5p')
   
   #information on remote sensing systems in the review list 
-  {
-    rs_type_df = tribble(
-      ~RS_systems,                 ~platform_type, ~sensor_type,    #~spatial_resolution_m, ~revisit_time_days,
-      "PRISM",                    "Satellite",    "Panchromatic",   #2.5,                 46,
-      "PALSAR-2",                    "Satellite",    "RADAR",         
-      "Aerial RGB",                "Aerial",       "RGB",
-      "Aerial hyperspectral",      "Aerial",       "Hyperspectral",
-      "Aerial laser scanning",     "Aerial",       "LiDAR",
-      "Aerial multispectral",      "Aerial",       "Multispectral",
-      "FORMOSAT-2",                 "Satellite",    "Multispectral",
-      "GEDI",                      "Satellite",    "LiDAR",
-      "Ground-based RGB",          "Ground-based", "RGB",
-      "Ground-based multispectral","Ground-based", "Multispectral",
-      "KOMPSAT-3",                 "Satellite",    "Multispectral",
-      "Landsat-4",                 "Satellite",    "Multispectral",
-      "Landsat-5",                 "Satellite",    "Multispectral",
-      "Landsat-7",                 "Satellite",    "Multispectral",
-      "Landsat-8",                 "Satellite",    "Multispectral",
-      "MODIS",                     "Satellite",    "Multispectral",
-      "PROBA-V",                   "Satellite",    "Multispectral",
-      "Point dendrometer",         "Ground-based", "Other",
-      "Rapideye",                  "Satellite",    "Multispectral",
-      "SPOT",                      "Satellite",    "Multispectral",
-      "SRTM",                      "Satellite",    "RADAR",
-      "Sentinel-1",                "Satellite",    "RADAR",
-      "Sentinel-2",                "Satellite",    "Multispectral",
-      "Terrestrial laser scanning","Ground-based", "LiDAR",
-      "UAV multispectral",         "UAV",          "Multispectral",
-      "UAV RGB",                   "UAV",          "RGB",
-      "WorldView-2",               "Satellite",    "Multispectral",
-      "Worldview-1",               "Satellite",    "Multispectral",
-      "ASTER",                     "Satellite",    "Multispectral",
-      "CBERS-4A",                  "Satellite",    "Multispectral",
-      "CORONA",                    "Satellite",    "RGB",
-      "ICESat",                    "Satellite",    "LiDAR",
-      "Sentinel-5p",               "Satellite",    "Multispectral",
-      "SMAP",                      "Satellite",    "RADAR",
-      "Harmonized Landsat Sentinel-2", "Satellite","Multispectral"
-    )
-  }
+  rs_type_df = read.csv('remote_sensing_systems_information.csv')
+  
   
   #check if the summary table has every system mentioned in the review list
   setdiff(RS_summ$RS_systems, rs_type_df$RS_systems)
@@ -1395,21 +1357,6 @@ ggplot(data_year_role_summ, aes(x = Acquisition_years, y = count, color = PS_rol
 
 #plotting
 {
-  #stacked bar chart
-  {
-    ggplot(RS_summ, aes(x = reorder(RS_systems, tot_count), y = count, fill = sys_value)) +
-      geom_col() +
-      labs(
-        x = "Remote sensing system",
-        y = "Number of articles",
-        fill = "Type"
-      ) +
-      theme_classic() +
-      scale_fill_manual(values = bicolor_plot_col) +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))+   # Rotate x-axis labels
-      coord_flip()  # Flip the coordinates to make y-axis horizontal
-  }
-  
   #stacked bar chart facet grid
   {
     RS_summ$platform_type = factor(RS_summ$platform_type, levels = c('Satellite', 'Aerial', 'Terrestrial', 'UAV'))

@@ -1,0 +1,36 @@
+RS_systems,platform_type,sensor_type
+PRISM,Satellite,Panchromatic
+PALSAR-2,Satellite,RADAR
+Aerial RGB,Aerial,RGB
+Aerial hyperspectral,Aerial,Hyperspectral
+Aerial laser scanning,Aerial,LiDAR
+Aerial multispectral,Aerial,Multispectral
+FORMOSAT-2,Satellite,Multispectral
+GEDI,Satellite,LiDAR
+Ground-based RGB,Ground-based,RGB
+Ground-based multispectral,Ground-based,Multispectral
+KOMPSAT-3,Satellite,Multispectral
+Landsat-4,Satellite,Multispectral
+Landsat-5,Satellite,Multispectral
+Landsat-7,Satellite,Multispectral
+Landsat-8,Satellite,Multispectral
+MODIS,Satellite,Multispectral
+PROBA-V,Satellite,Multispectral
+Point dendrometer,Ground-based,Other
+Rapideye,Satellite,Multispectral
+SPOT,Satellite,Multispectral
+SRTM,Satellite,RADAR
+Sentinel-1,Satellite,RADAR
+Sentinel-2,Satellite,Multispectral
+Terrestrial laser scanning,Ground-based,LiDAR
+UAV multispectral,UAV,Multispectral
+UAV RGB,UAV,RGB
+WorldView-2,Satellite,Multispectral
+Worldview-1,Satellite,Multispectral
+ASTER,Satellite,Multispectral
+CBERS-4A,Satellite,Multispectral
+CORONA,Satellite,RGB
+ICESat,Satellite,LiDAR
+Sentinel-5p,Satellite,Multispectral
+SMAP,Satellite,RADAR
+Harmonized Landsat Sentinel-2,Satellite,Multispectral
