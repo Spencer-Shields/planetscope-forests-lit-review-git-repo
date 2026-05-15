@@ -33,80 +33,167 @@
   library(ggh4x)
   
   
-  review_list <<- 'review_list_7.2.xlsx'
+  # review_list <<- 'review_list_7.2.xlsx'
+  review_list <<- 'reference lists/review_list_8.xlsx'
   
   review_list_temp = tempfile(fileext = '.xlsx')
   file.copy(review_list, review_list_temp, overwrite = T)
   
   df_big <<- read_excel(review_list_temp, sheet = "main table")
   
-  figures_dir = 'figures'
+  figures_dir = 'figures_sors_revisions1'
   if(!dir.exists(figures_dir)){dir.create(figures_dir)}
   
   #----clean applications----
-  #clean applications (i.e. make terminology consistent) NOTE: MAKE SURE EACH LINE IS THE SAME AS THE NEXT CODE BLOCK
-  df_big$Application_cleaned = df_big$Application_recleaned %>%
-    # str_replace_all('Leaf phenology|Solar illumination|Flowering phenology', 'Phenology') %>%
-    str_replace_all('Carbon flux|Aboveground carbon', 'Aboveground biomass') %>%
-    str_replace_all('Forest and tree mapping|Vegetation detection', 'Forest or tree mapping') %>%
-    str_replace_all('Forest succession', 'Successional stage') %>%
-    str_replace_all('Invasive plant', 'Planet species') %>%
-    str_replace_all('Tree species diversity', 'Biodiversity') %>%
-    str_replace_all('Wildlife diversity', 'Biodiversity') %>%
-    str_replace_all('Leaf phenology|Flowering phenology|Land surface phenology|Solar illumination', 'Phenology') %>%
-    str_replace_all('Insect disturbance|Tree decline|Drought|Defoliation|Wildlife disturbance', 'Tree health') %>%
-    str_replace_all('Unspecified disturbance', 'Deforestation') %>%
-    str_replace_all('Tree species', 'Forest or tree classification') %>%
-    str_replace_all('Disease', 'Tree health') %>%
-    # str_replace_all('Forest or tree classification diversity', 'Forest or tree classification') %>%
-    str_replace_all('Canopy cover|Canopy height|Canopy openness|Max gap|Mean gap|Plant area density', 'Canopy structural metrics') %>%
-    str_replace_all('Radiometric normalization', 'Image quality') %>%
-    str_replace_all('Image quality investigation', 'Image quality') %>%
-    str_replace_all('Image gap filling', 'Image quality') %>%
-    str_replace_all('Cloud and shadow detection', 'Image quality') %>%
-    str_replace_all('Stem diameter|Stem density|Basal area', 'Stem structural metrics') %>%
-    str_replace_all('Successional stage', 'Forest or tree classification') %>% 
-    str_replace_all('Species diversity', 'Tree species diversity') %>%
-    str_replace_all('Plant species', 'Understory plant') %>%
-    #new aggregation scheme
-    str_replace_all('Harvesting|Fire severity|Fire area mapping|Fire severity|Windthrow mapping|Windthrow impact|Landslide|Kiln scar detection', 'Harvesting or abiotic disturbance') %>%
-    str_replace_all('Phenologic trend analysis|Illumination conditions', 'Phenology') %>%
-    str_replace_all('Tree disease|Insect defoliation detection|Tree mortality|Snag detection', 'Tree health') %>%
-    str_replace_all('Forest or tree mapping|Forest or tree classification|Planet species detection|Land cover change', 'Land cover classification') %>%
-    str_replace_all('Canopy structural metrics|Stem structural metrics', 'Forest structural metrics') %>%
-    str_replace_all('Image quality', 'Data quality')
   
-  #change applications for model performance
-  df_big$PS_model_performance_to_aggregate = df_big$PS_model_performance_to_aggregate %>%
-    # str_replace_all('Leaf phenology|Solar illumination|Flowering phenology', 'Phenology') %>%
-    str_replace_all('Carbon flux|Aboveground carbon', 'Aboveground biomass') %>%
-    str_replace_all('Forest and tree mapping|Vegetation detection', 'Forest or tree mapping') %>%
-    str_replace_all('Forest succession', 'Successional stage') %>%
-    str_replace_all('Invasive plant', 'Planet species') %>%
-    str_replace_all('Tree species diversity', 'Biodiversity') %>%
-    str_replace_all('Wildlife diversity', 'Biodiversity') %>%
-    str_replace_all('Leaf phenology|Flowering phenology|Land surface phenology|Solar illumination', 'Phenology') %>%
-    str_replace_all('Insect disturbance|Tree decline|Drought|Defoliation|Wildlife disturbance', 'Tree health') %>%
-    str_replace_all('Unspecified disturbance', 'Deforestation') %>%
-    str_replace_all('Tree species', 'Forest or tree classification') %>%
-    str_replace_all('Disease', 'Tree health') %>%
-    # str_replace_all('Forest or tree classification diversity', 'Forest or tree classification') %>%
-    str_replace_all('Canopy cover|Canopy height|Canopy openness|Max gap|Mean gap|Plant area density', 'Canopy structural metrics') %>%
-    str_replace_all('Radiometric normalization', 'Image quality') %>%
-    str_replace_all('Image quality investigation', 'Image quality') %>%
-    str_replace_all('Image gap filling', 'Image quality') %>%
-    str_replace_all('Cloud and shadow detection', 'Image quality') %>%
-    str_replace_all('Stem diameter|Stem density|Basal area', 'Stem structural metrics') %>%
-    str_replace_all('Successional stage', 'Forest or tree classification') %>% 
-    str_replace_all('Species diversity', 'Tree species diversity') %>%
-    str_replace_all('Plant species', 'Understory plant') %>%
-    #new aggregation scheme
-    str_replace_all('Harvesting|Fire severity|Fire area mapping|Fire severity|Windthrow mapping|Windthrow impact|Landslide|Kiln scar detection', 'Harvesting or abiotic disturbance') %>%
-    str_replace_all('Phenologic trend analysis|Illumination conditions', 'Phenology') %>%
-    str_replace_all('Tree disease|Insect defoliation detection|Tree mortality|Snag detection', 'Tree health') %>%
-    str_replace_all('Forest or tree mapping|Forest or tree classification|Planet species detection|Land cover change', 'Land cover classification') %>%
-    str_replace_all('Canopy structural metrics|Stem structural metrics', 'Forest structural metrics') %>%
-    str_replace_all('Image quality', 'Data quality')
+  #consolidate applications into same column
+  df_big = df_big |>
+    mutate(Application_recleaned = ifelse(is.na(Application_recleaned) & !is.na(Application)
+                                          , Application, Application_recleaned))
+  
+  clean_applications <- function(x) { #x is a column in a dataframe
+    x %>%
+      # str_replace_all('Leaf phenology|Solar illumination|Flowering phenology', 'Phenology') %>%
+      str_replace_all('Carbon flux|Aboveground carbon', 'Aboveground biomass') %>%
+      str_replace_all('Forest and tree mapping|Vegetation detection', 'Forest or tree mapping') %>%
+      str_replace_all('Forest succession', 'Successional stage') %>%
+      str_replace_all('Invasive plant', 'Planet species') %>%
+      str_replace_all('Tree species diversity', 'Biodiversity') %>%
+      str_replace_all('Wildlife diversity', 'Biodiversity') %>%
+      str_replace_all('Leaf phenology|Flowering phenology|Land surface phenology|Solar illumination', 'Phenology') %>%
+      str_replace_all('Insect disturbance|Tree decline|Drought|Defoliation|Wildlife disturbance', 'Tree health') %>%
+      str_replace_all('Unspecified disturbance', 'Deforestation') %>%
+      str_replace_all('Tree species', 'Forest or tree classification') %>%
+      str_replace_all('Disease', 'Tree health') %>%
+      # str_replace_all('Forest or tree classification diversity', 'Forest or tree classification') %>%
+      str_replace_all('Canopy cover|Canopy height|Canopy openness|Max gap|Mean gap|Plant area density', 'Canopy structural metrics') %>%
+      str_replace_all('Radiometric normalization', 'Image quality') %>%
+      str_replace_all('Image quality investigation', 'Image quality') %>%
+      str_replace_all('Image gap filling', 'Image quality') %>%
+      str_replace_all('Cloud and shadow detection', 'Image quality') %>%
+      str_replace_all('Stem diameter|Stem density|Basal area', 'Stem structural metrics') %>%
+      str_replace_all('Successional stage', 'Forest or tree classification') %>%
+      str_replace_all('Species diversity', 'Tree species diversity') %>%
+      str_replace_all('Plant species', 'Understory plant') %>%
+      #new aggregation scheme
+      str_replace_all('Harvesting|Fire severity|Fire area mapping|Fire severity|Windthrow mapping|Windthrow impact|Landslide|Kiln scar detection|Fire mapping|Deforestation|Fire', 'Harvesting or abiotic disturbance') %>%
+      str_replace_all('Phenologic trend analysis|Illumination conditions', 'Phenology') %>%
+      str_replace_all('Tree disease|Insect defoliation detection|Tree mortality|Snag detection', 'Tree health') %>%
+      str_replace_all('Forest or tree mapping|Forest or tree classification|Planet species detection|Land cover change|Land cover mapping|Forest classification|Snow cover', 'Land cover classification') %>%
+      str_replace_all('Canopy structural metrics|Stem structural metrics', 'Forest structural metrics') %>%
+      str_replace_all('Image quality', 'Data quality') |>
+      str_replace_all('Forest structural metrics|Aboveground biomass', 'Forest structure or biomass')
+  }
+  
+  df_big <- df_big %>% #appluy cleaning to different columns with applications
+    mutate(
+      Application_cleaned = clean_applications(Application_recleaned),
+      PS_model_performance_to_aggregate = clean_applications(PS_model_performance_to_aggregate),
+      Relative_RS_performance_2 = clean_applications(Relative_RS_performance_2)
+    )
+  
+  
+  #old cleaning code
+  {
+  # #clean applications (i.e. make terminology consistent) NOTE: MAKE SURE EACH LINE IS THE SAME AS THE NEXT CODE BLOCK
+  # df_big$Application_cleaned = df_big$Application_recleaned %>%
+    # # str_replace_all('Leaf phenology|Solar illumination|Flowering phenology', 'Phenology') %>%
+    # str_replace_all('Carbon flux|Aboveground carbon', 'Aboveground biomass') %>%
+    # str_replace_all('Forest and tree mapping|Vegetation detection', 'Forest or tree mapping') %>%
+    # str_replace_all('Forest succession', 'Successional stage') %>%
+    # str_replace_all('Invasive plant', 'Planet species') %>%
+    # str_replace_all('Tree species diversity', 'Biodiversity') %>%
+    # str_replace_all('Wildlife diversity', 'Biodiversity') %>%
+    # str_replace_all('Leaf phenology|Flowering phenology|Land surface phenology|Solar illumination', 'Phenology') %>%
+    # str_replace_all('Insect disturbance|Tree decline|Drought|Defoliation|Wildlife disturbance', 'Tree health') %>%
+    # str_replace_all('Unspecified disturbance', 'Deforestation') %>%
+    # str_replace_all('Tree species', 'Forest or tree classification') %>%
+    # str_replace_all('Disease', 'Tree health') %>%
+    # # str_replace_all('Forest or tree classification diversity', 'Forest or tree classification') %>%
+    # str_replace_all('Canopy cover|Canopy height|Canopy openness|Max gap|Mean gap|Plant area density', 'Canopy structural metrics') %>%
+    # str_replace_all('Radiometric normalization', 'Image quality') %>%
+    # str_replace_all('Image quality investigation', 'Image quality') %>%
+    # str_replace_all('Image gap filling', 'Image quality') %>%
+    # str_replace_all('Cloud and shadow detection', 'Image quality') %>%
+    # str_replace_all('Stem diameter|Stem density|Basal area', 'Stem structural metrics') %>%
+    # str_replace_all('Successional stage', 'Forest or tree classification') %>%
+    # str_replace_all('Species diversity', 'Tree species diversity') %>%
+    # str_replace_all('Plant species', 'Understory plant') %>%
+    # #new aggregation scheme
+    # str_replace_all('Harvesting|Fire severity|Fire area mapping|Fire severity|Windthrow mapping|Windthrow impact|Landslide|Kiln scar detection|Fire mapping', 'Harvesting or abiotic disturbance') %>%
+    # str_replace_all('Phenologic trend analysis|Illumination conditions', 'Phenology') %>%
+    # str_replace_all('Tree disease|Insect defoliation detection|Tree mortality|Snag detection', 'Tree health') %>%
+    # str_replace_all('Forest or tree mapping|Forest or tree classification|Planet species detection|Land cover change|Land cover mapping|Forest classification', 'Land cover classification') %>%
+    # str_replace_all('Canopy structural metrics|Stem structural metrics', 'Forest structural metrics') %>%
+    # str_replace_all('Image quality', 'Data quality') |>
+    # str_replace_all('Forest structural metrics|Aboveground biomass', 'Forest structure or biomass')
+  # 
+  # #change applications for model performance
+  # df_big$PS_model_performance_to_aggregate = df_big$PS_model_performance_to_aggregate %>%
+  #   # str_replace_all('Leaf phenology|Solar illumination|Flowering phenology', 'Phenology') %>%
+  #   str_replace_all('Carbon flux|Aboveground carbon', 'Aboveground biomass') %>%
+  #   str_replace_all('Forest and tree mapping|Vegetation detection', 'Forest or tree mapping') %>%
+  #   str_replace_all('Forest succession', 'Successional stage') %>%
+  #   str_replace_all('Invasive plant', 'Planet species') %>%
+  #   str_replace_all('Tree species diversity', 'Biodiversity') %>%
+  #   str_replace_all('Wildlife diversity', 'Biodiversity') %>%
+  #   str_replace_all('Leaf phenology|Flowering phenology|Land surface phenology|Solar illumination', 'Phenology') %>%
+  #   str_replace_all('Insect disturbance|Tree decline|Drought|Defoliation|Wildlife disturbance', 'Tree health') %>%
+  #   str_replace_all('Unspecified disturbance', 'Deforestation') %>%
+  #   str_replace_all('Tree species', 'Forest or tree classification') %>%
+  #   str_replace_all('Disease', 'Tree health') %>%
+  #   # str_replace_all('Forest or tree classification diversity', 'Forest or tree classification') %>%
+  #   str_replace_all('Canopy cover|Canopy height|Canopy openness|Max gap|Mean gap|Plant area density', 'Canopy structural metrics') %>%
+  #   str_replace_all('Radiometric normalization', 'Image quality') %>%
+  #   str_replace_all('Image quality investigation', 'Image quality') %>%
+  #   str_replace_all('Image gap filling', 'Image quality') %>%
+  #   str_replace_all('Cloud and shadow detection', 'Image quality') %>%
+  #   str_replace_all('Stem diameter|Stem density|Basal area', 'Stem structural metrics') %>%
+  #   str_replace_all('Successional stage', 'Forest or tree classification') %>% 
+  #   str_replace_all('Species diversity', 'Tree species diversity') %>%
+  #   str_replace_all('Plant species', 'Understory plant') %>%
+  #   #new aggregation scheme
+  #   str_replace_all('Harvesting|Fire severity|Fire area mapping|Fire severity|Windthrow mapping|Windthrow impact|Landslide|Kiln scar detection|Fire mapping', 'Harvesting or abiotic disturbance') %>%
+  #   str_replace_all('Phenologic trend analysis|Illumination conditions', 'Phenology') %>%
+  #   str_replace_all('Tree disease|Insect defoliation detection|Tree mortality|Snag detection', 'Tree health') %>%
+  #   str_replace_all('Forest or tree mapping|Forest or tree classification|Planet species detection|Land cover change|Land cover mapping|Forest classification', 'Land cover classification') %>%
+  #   str_replace_all('Canopy structural metrics|Stem structural metrics', 'Forest structural metrics') %>%
+  #   str_replace_all('Image quality', 'Data quality')|>
+  #   str_replace_all('Forest structural metrics|Aboveground biomass', 'Forest structure or biomass')
+  # 
+  # #change applications for comparison
+  # df_big$Relative_RS_performance_2 = df_big$Relative_RS_performance_2 %>%
+  #   # str_replace_all('Leaf phenology|Solar illumination|Flowering phenology', 'Phenology') %>%
+  #   str_replace_all('Carbon flux|Aboveground carbon', 'Aboveground biomass') %>%
+  #   str_replace_all('Forest and tree mapping|Vegetation detection', 'Forest or tree mapping') %>%
+  #   str_replace_all('Forest succession', 'Successional stage') %>%
+  #   str_replace_all('Invasive plant', 'Planet species') %>%
+  #   str_replace_all('Tree species diversity', 'Biodiversity') %>%
+  #   str_replace_all('Wildlife diversity', 'Biodiversity') %>%
+  #   str_replace_all('Leaf phenology|Flowering phenology|Land surface phenology|Solar illumination', 'Phenology') %>%
+  #   str_replace_all('Insect disturbance|Tree decline|Drought|Defoliation|Wildlife disturbance', 'Tree health') %>%
+  #   str_replace_all('Unspecified disturbance', 'Deforestation') %>%
+  #   str_replace_all('Tree species', 'Forest or tree classification') %>%
+  #   str_replace_all('Disease', 'Tree health') %>%
+  #   # str_replace_all('Forest or tree classification diversity', 'Forest or tree classification') %>%
+  #   str_replace_all('Canopy cover|Canopy height|Canopy openness|Max gap|Mean gap|Plant area density', 'Canopy structural metrics') %>%
+  #   str_replace_all('Radiometric normalization', 'Image quality') %>%
+  #   str_replace_all('Image quality investigation', 'Image quality') %>%
+  #   str_replace_all('Image gap filling', 'Image quality') %>%
+  #   str_replace_all('Cloud and shadow detection', 'Image quality') %>%
+  #   str_replace_all('Stem diameter|Stem density|Basal area', 'Stem structural metrics') %>%
+  #   str_replace_all('Successional stage', 'Forest or tree classification') %>% 
+  #   str_replace_all('Species diversity', 'Tree species diversity') %>%
+  #   str_replace_all('Plant species', 'Understory plant') %>%
+  #   #new aggregation scheme
+  #   str_replace_all('Harvesting|Fire severity|Fire area mapping|Fire severity|Windthrow mapping|Windthrow impact|Landslide|Kiln scar detection|Fire mapping', 'Harvesting or abiotic disturbance') %>%
+  #   str_replace_all('Phenologic trend analysis|Illumination conditions', 'Phenology') %>%
+  #   str_replace_all('Tree disease|Insect defoliation detection|Tree mortality|Snag detection', 'Tree health') %>%
+  #   str_replace_all('Forest or tree mapping|Forest or tree classification|Planet species detection|Land cover change|Land cover mapping|Forest classification', 'Land cover classification') %>%
+  #   str_replace_all('Canopy structural metrics|Stem structural metrics', 'Forest structural metrics') %>%
+  #   str_replace_all('Image quality', 'Data quality')|>
+  #   str_replace_all('Forest structural metrics|Aboveground biomass', 'Forest structure or biomass')
+    }
   
   #----subset monster excel table----
   
@@ -281,7 +368,7 @@
   
   #save figure to figures directory
   save.fig = function(f){
-    ggsave(filename = paste0(figures_dir,'/',f,'.png')
+    ggsave(filename = paste0(figures_dir,'/',f,'.tiff')
            , dpi = 600
            ,width = 18
            ,height = 18
@@ -312,25 +399,37 @@
   
   tricolor_plot_col <<- c('navy', 'seagreen', 'plum4')
   
-  application_color_map <<- tibble(
+  Application_cleaned_df = splitter_counter(df_sub$Application_cleaned) |> filter(
+    b != 'Data quality'
+  )
+  
+  application_color_map <<- tibble( #assign colors for each forest monitoring application
     
-    Application_cleaned = splitter_counter(df_sub$Application_cleaned)[['b']],
+    Application_cleaned = Application_cleaned_df$b,
     
     application_colors = 
       # glasbey.colors(length(unique(
       # splitter_counter(df_sub$Application_cleaned)[['b']]))),
       createPalette(
-        N = nrow(splitter_counter(df_sub$Application_cleaned)) #get number of colors based on number of applications
+        N = nrow(Application_cleaned_df) #get number of colors based on number of applications
         , seedcolors = c("#ff3333", "#339966", "#336699") #seed to generate color map
       ),
     
-    application_count = splitter_counter(df_sub$Application_cleaned)[['n']]
+    application_count = Application_cleaned_df$n
   )
   
   application_colors <<- setNames(application_color_map$application_colors,
                                   application_color_map$Application_cleaned)
   
-  df = df_sub} 
+  #----dataframe variable assignment----
+  df_sub = df_sub |> filter(Publication.Year != 2025)
+  
+  df = df_sub
+  
+  #----load supplementary information about remote sensing systems----
+  
+  rs_type_df = read.csv('remote_sensing_systems_information.csv')
+  } 
 
 #####---------------------------------- Publication info -------------------------------------
 #---- Eligibility ----
@@ -340,6 +439,7 @@ df_big %>% group_by(No_access) %>% summarise(count = n())
 
 #exclusion
 df_big %>% mutate(excluder = ifelse(is.na(Exclude), Maybe_exclude, Exclude)) %>% group_by(excluder) %>% summarise(count = n())
+# view(df_big |> mutate(excluded = ifelse(!is.na(Exclude)|!is.na(Maybe_exclude),1,0)) |> filter(excluded == 1) |> select(Maybe_exclude, Exclude, Publication.Year, Author, Title))
 df_big %>% filter(str_detect(Exclude, 'glish')|str_detect(Maybe_exclude, 'glish')) %>% select(Author, Title, Exclude) #how many not in english
 
 #---- Publication year----
@@ -356,12 +456,12 @@ year_df = splitter_counter(df$Publication.Year)
 # ##
 # year_plot
 
-year_plot = ggplot(year_df[year_df$b != 2024], aes(x = b, y = n)) +
+year_plot = ggplot(year_df, aes(x = b, y = n)) +
   geom_point(
-    size = point_size
+    size = point_size, color = 'red'
   ) +
   geom_line(
-    size = line_size
+    size = line_size, color = 'red'
   ) +
   labs(
     x = "Publication year",
@@ -593,7 +693,7 @@ app_bargraph_long = ggplot(
       fill = 'Number of articles') +
     theme_minimal_grid()+
     coord_sf(crs= "+proj=robin")
-  ggsave(filename = paste0(figures_dir,'/Figure3.png'), #crop crop final image
+  ggsave(filename = paste0(figures_dir,'/Figure3.tiff'), #crop crop final image
          dpi = 600
          ,height = 24,
          width = 24,
@@ -699,11 +799,12 @@ ggplot(biomes_summ_2, aes(x = reorder(b, desc(-n)), y = n)) +
   coord_flip()  # Flip the coordinates to make y-axis horizontal
 
 
-#---- biomes versus applications ----
+#---- biomes versus applications (NOTE: run the Application and biome/forest type blocks before this) ----
 
 biomes_apps_df = biomes_df %>%
   cSplit(splitCols = 'Application_cleaned', direction = 'long', sep = ', ') %>%
   filter(!is.na(biomes)|biomes == 'NA') %>%
+  filter(PS_role != 'Validation') |> #exclude validation papers
   mutate(biomes_2 = ifelse(str_detect(biomes, 'rban|plantation'), 'Urban vegetation or plantation', biomes))
 
 biomes_apps_summ = biomes_apps_df %>%
@@ -715,86 +816,6 @@ biomes_apps_summ = biomes_apps_df %>%
          biome_label = paste0(biomes_2, ' (',biome_freq,')')) %>%
   filter(!is.na(Application_cleaned))
 
-
-#sankey and alluvial plots (don't work because node height is not proportional to numbers of publications)
-{
-  library(ggsankey)
-  app_colors <- setNames(application_color_map$application_colors, application_color_map$Application_cleaned)
-  
-  ggplot(biomes_apps_summ, aes(y = count,
-                               axis1 = reorder(Application_cleaned, -app_freq),
-                               axis2 = reorder(biomes_2, -biome_freq))) +
-    geom_alluvium(aes(fill = Application_cleaned)) +
-    geom_stratum() +
-    geom_label(stat = "stratum", aes(label = str_wrap(after_stat(stratum), width = 50)), size = 2.4) +
-    scale_fill_manual(values = app_colors) + # Apply custom colors
-    scale_x_discrete(limits = c("Application", "Terrestrial biomes"), expand = c(0.15, 0.05)) +
-    theme_classic()+
-    theme(
-      legend.position = 'none'
-    )
-  
-  # biomes_apps_df_long = biomes_apps_df %>%
-  #   select(Title, Application_cleaned, biomes_2) %>%
-  #   left_join(tibble(Application_cleaned = apps_summ$b, app_freq = apps_summ$n)) %>%
-  #   left_join(tibble(biomes_2 = biomes_summ_2$b, biome_freq = biomes_summ_2$n)) %>%
-  #   pivot_longer(cols = c('Application_cleaned', 'biomes_2'), names_to = 'node', values_to = 'stratum') %>%
-  #   mutate(stratum_height = ifelse(node == 'Application_cleaned', app_freq, biome_freq))
-  
-  biomes_apps_df_ntitleapps = biomes_apps_df %>% group_by(Title, Application_cleaned) %>% summarize(ntitleapps = n())
-  biomes_apps_df_ntitlebiomes = biomes_apps_df %>% group_by(Title, biomes_2) %>% summarize(ntitlebiomes = n())
-  
-  biomes_apps_weights_df = merge(biomes_apps_df_ntitleapps, biomes_apps_df_ntitlebiomes) %>%
-    mutate(weight = 1/ntitleapps)
-  
-  biomes_apps_df_long = biomes_apps_df %>%
-    merge(biomes_apps_weights_df) %>%
-    make_long(Application_cleaned, biomes_2
-              , value = weight
-    ) %>%
-    left_join(tibble(node = apps_summ$b, n_apps_pubs = apps_summ$n)) %>%
-    left_join(tibble(node = biomes_summ_2$b, n_biomes_pubs = biomes_summ_2$n)) %>%
-    mutate(ordering = ifelse(x == 'Application_cleaned', n_apps_pubs, n_biomes_pubs))
-  
-  app_colors <- setNames(application_color_map$application_colors, application_color_map$Application_cleaned)
-  
-  ggplot(biomes_apps_df_long, aes(x = x,
-                                  next_x = next_x,
-                                  node = reorder(node, ordering),
-                                  next_node = next_node,
-                                  label = str_wrap(node, width = 50),
-                                  value = value,
-                                  fill = factor(node))) +
-    geom_sankey(
-      node.fill = 'lightgrey'
-      ,type = 'alluvial'
-      , width = 0.45
-      , alpha = 0.75
-    ) +
-    # geom_sankey_label(
-    #   # aes(label = str_wrap(node, width = 0.5)),
-    #   fill = 'white'
-    #     ,size = 2.4)+
-    # # scale_fill_manual(values = app_colors) + # Apply custom colors
-    # scale_x_discrete(labels = c("Application"
-    #                             , "Terrestrial biomes")
-    #                  # , expand = c(0.15, 0.05)
-    #                  ) +
-    theme_classic()+
-    theme(
-      legend.position = 'none'
-    )
-  
-  # a = biomes_apps_summ %>% make_long(Application_cleaned, biomes_2)
-  #
-  # ggplot(biomes_apps_df %>% make_long(Application_cleaned, biomes_2), aes(x = x,
-  #                next_x = next_x,
-  #                node = node,
-  #                next_node = next_node,
-  #                fill = factor(node))) +
-  #   geom_sankey() +
-  #   scale_fill_discrete(drop=FALSE)
-  }
 
 #balloon plot
 {
@@ -814,7 +835,7 @@ biomes_apps_summ = biomes_apps_df %>%
     geom_point(
       color = simple_plot_col
     )+
-    labs(x = 'Application', y = 'Terrestrial ecosystem'
+    labs(x = 'Application category', y = 'Terrestrial ecosystem'
          , size = 'Publications'
     )+
     scale_size(name = 'Number of articles', range = c(2,8), breaks = c(2,4,6,8,10))+
@@ -828,7 +849,7 @@ biomes_apps_summ = biomes_apps_df %>%
       # ,legend.position = 'none'
     )
   
-  save.fig('Figure4')
+  save.fig('Figure8') 
 }
 
 #####---------------------------------- DATA CHARACTERISTICS -------------------------------------
@@ -918,7 +939,7 @@ biomes_apps_summ = biomes_apps_df %>%
     # scale_x_continuous(labels = area_hist$class_lab, breaks = area_hist$class_no) +  # Customize x-axis labels
     theme_classic() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better visibility
-  save.fig('Figure6')
+  save.fig('spatialareas_stackedbar')
 }
 #median size of area imaged
 median(area_df$Total_area_imaged_km2_clean)
@@ -1149,7 +1170,7 @@ median(area_df$Total_area_imaged_km2_clean)
     mutate(PS_timeseries_cleaned = bracket_cleaner(PS_timeseries)) %>%
     filter(tolower(PS_timeseries) != 'n') %>%
     #split column to handle publications where different scales of timeseries monitoring are used
-    cSplit(splitCols = 'Revisit_cleaned', sep = '; ', direction = 'long') %>%
+    cSplit(splitCols = c('Revisit_cleaned', 'n_timeseries_dates', 'Timeseries_length'), sep = ', ', direction = 'long') %>%
     #clean brackets, filter NA values from Timeseries_length and n_dates so that columns are numeric
     filter(Timeseries_length != 'NA') %>%
     filter(n_timeseries_dates != 'NA') %>%
@@ -1198,7 +1219,7 @@ median(area_df$Total_area_imaged_km2_clean)
     temp_pg = ggplot_gtable(temp_pb)
     plot(temp_pg)
     # save.fig('Figure5')
-    ggsave(filename = paste0(figures_dir,'/Figure5.png')
+    ggsave(filename = paste0(figures_dir,'/Figure4.tiff')
            ,plot = temp_pg
            ,width = 18
            ,height = 18
@@ -1234,12 +1255,18 @@ median(area_df$Total_area_imaged_km2_clean)
     geom_segment( aes(x=n_timeseries_dates, xend=n_timeseries_dates, y=0, yend=count))
 }
 
-#---- Output resolution ----
+#---- Output spatial resolution ----
 
 res_out = cSplit(df, 'PS_output_spatial_resolution', direction = 'long')
 res_out_summ = splitter_counter(
   as.numeric(bracket_cleaner(res_out$PS_output_spatial_resolution)))
 res_out_summ
+
+res_out_filt = res_out |> #dataframe to help look at the articles where PS is resampled
+  filter(PS_output_spatial_resolution < 3|PS_output_spatial_resolution > 4.77) |>
+  filter(!str_detect(PS_output_spatial_resolution,'na'),
+         !str_detect(PS_output_spatial_resolution,'-'))|>
+  select(Citation, Title, Application_cleaned, PS_output_spatial_resolution)
 
 #---- data product -----
 
@@ -1295,10 +1322,10 @@ PS_use_year = df %>%
     tibble(Publication.Year = year_df$b, PS_role = 'Total', count = year_df$n)) %>%
   mutate(PS_role = factor(PS_role, levels = c('Total', 'Analysis', 'Validation'))) %>%
   distinct() %>%
-  filter(Publication.Year < max(Publication.Year)) %>%
+  # filter(Publication.Year < max(Publication.Year)) %>%
   filter(!is.na(PS_role))
 
-##
+#scatter plot
 ggplot(PS_use_year, aes(x = Publication.Year, y = count, color = PS_role, group = PS_role)) +
   geom_point(size = point_size) +
   geom_line(size = line_size) +
@@ -1312,7 +1339,20 @@ ggplot(PS_use_year, aes(x = Publication.Year, y = count, color = PS_role, group 
   scale_color_manual(values = tricolor_plot_col) +  # Set custom colors
   theme_classic() +
   theme(legend.title = element_blank())
-save.fig('Figure2')
+# save.fig('Figure2')
+
+#stacked bar graph
+ggplot(PS_use_year[PS_use_year$PS_role != 'Total',], aes(x = Publication.Year, y = count, fill = PS_role))+
+  geom_bar(stat = 'identity') +
+  scale_fill_manual(values = c('seagreen', 'plum')) +  # Set custom colors
+  labs(
+    x = "Publication year",
+    y = "Number of articles"
+    # fill = "Type"  # Since you're using color, this can be removed
+  ) +
+  theme_classic() +
+  theme(legend.title = element_blank())
+save.fig('papers_byyear_bypurpose_stackedbar')
 
 
 #planetscope role by year of data acquisition
@@ -1392,9 +1432,6 @@ ggplot(data_year_role_summ, aes(x = Acquisition_years, y = count, color = PS_rol
     str_replace_all('FORMSAT-2', 'FORMOSAT-2') %>%
     str_replace_all('Sentinel 5-p', 'Sentinel-5p')
   
-  #information on remote sensing systems in the review list 
-  rs_type_df = read.csv('remote_sensing_systems_information.csv')
-  
   
   #check if the summary table has every system mentioned in the review list
   setdiff(RS_summ$RS_systems, rs_type_df$RS_systems)
@@ -1442,757 +1479,757 @@ ggplot(data_year_role_summ, aes(x = Acquisition_years, y = count, color = PS_rol
                    , space = 'free_y'
                    , nest_line = element_line())+
       coord_flip()  # Flip the coordinates to make y-axis horizontal
-    save.fig('Figure9')
+    save.fig('RSsystems_sidewaysbar')
   }
   
 }
 
 #---- Analysis performance versus other RS systems REDO ----
 
-{
-  #clean RS comparison performance data
-  new_app_delimiter = '$ '  
-  
-  rscompare2_df = df %>%
-    filter(!is.na(RS_performance_to_aggregate)) %>% #remove NA values
-    mutate(RS_performance_to_aggregate = str_replace_all(RS_performance_to_aggregate, ';; ', new_app_delimiter)) %>% #cSplit doesn't work well with more than two characters for sep, so change ;; to a different value
-    cSplit(splitCols = 'RS_performance_to_aggregate', direction = 'long', sep = new_app_delimiter) #split by application (top level delimiter)
-  for(i in 1:nrow(rscompare2_df)){ #if the application is specified in RS_performance_to_aggregate then use it, otherwise get application from Application_cleaned column
-    perf = rscompare2_df$RS_performance_to_aggregate[i]
-    rscompare2_df$RS_compare_application[i] = ifelse(str_detect(perf, ':: '),
-                                                     str_split_1(perf, ':: ')[1],
-                                                     rscompare2_df$Application_cleaned[i])
-  }
-  #remove applications from RS_performance_to_compare column
-  rscompare2_df = rscompare2_df %>% mutate(RS_performance_to_aggregate = ifelse(str_detect(RS_performance_to_aggregate, ':: '),
-                                                                                str_extract(RS_performance_to_aggregate,"(?<=:: ).*"),
-                                                                                RS_performance_to_aggregate))
-  
-  #initialize new columns columns to contain the performance statistic and performance gain for the different remote sensing systems
-  rs_compare_systems = rscompare2_df$RS_performance_to_aggregate %>% str_split('; ') %>% unlist() %>% str_extract("^[^:]+") %>% unique()
-  rs_compare_systems_cols = paste0(rs_compare_systems,'_gain')
-  for(i in 1:length(rs_compare_systems_cols)){rscompare2_df[[rs_compare_systems_cols[i]]]=NA}
-  rscompare2_df$compare_stat = NA
-  
-  # view(rscompare2_df %>% select(RS_compare_application, RS_performance_to_aggregate))
-  
-  # rs_compare_cols = c()
-  checker = c()
-}
-for(i in 1:nrow(rscompare2_df)){
-  
-  col = rscompare2_df$RS_performance_to_aggregate #column where performance stats are contained
-  
-  sys_list = unlist(str_split(col[i], '; ')) #split the string into different RS datasets based on the delimiter '; '
-  ps_index = which(str_detect(sys_list, 'PS')) #get the index of which item in sys_list contains the Planetscope information
-  ps_performance = as.numeric(str_split_1(str_extract(sys_list[ps_index], "(?<= = ).*"),', ')) #get Planetscope performance
-  other_rs_list = sys_list[-ps_index] #get list of remote sensing data without the planetscope data
-  
-  compare_stat = str_extract(sys_list[ps_index], "(?<=: ).*(?= =)") #get the performance statistic (occurs between ": " and " =")
-  rscompare2_df$compare_stat[i] = compare_stat
-  
-  for(j in 1:length(other_rs_list)){
-    
-    rs_name = str_split_1(other_rs_list[j],": ")[1] #get the name of the other remote sensing dataset
-    #get the analysis performance associated with the other remote sensing dataset
-    rs_performance = as.numeric(str_split_1(str_extract(other_rs_list[j], ifelse(str_detect(other_rs_list[j],'='), "(?<= = ).*", '(?<=: ).*'))
-                                            ,
-                                            ', '))
-    performance_gain = mean(ps_performance - rs_performance)
-    
-    
-    performance_gain_col = paste0(rs_name,'_gain')
-    
-    rscompare2_df[[performance_gain_col]][i] = performance_gain
-    
-    # if(!(performance_gain_col %in% rs_compare_cols)){
-    #   rs_compare_cols[length(rs_compare_cols)+1] = performance_gain_col
-    # }
-  }
-  checker[i] = i #data cleaning/debugging tool which returns the row before teh one which fails, comment out if not using
-}
-
-
-#make dataframe for remote sensing datasets to recode labels
-{
-  rs_replacement_map = tribble(
-    ~original_label, ~replacement, ~spatial_resolution, ~sensor_type,
-    'S2', 'Sentinel-2', 10, 'Optical',
-    'L8', 'Landsat-8', 30, 'Optical',
-    'WV2', 'Worldview-2', 1.8, 'Optical',
-    'W2', 'Worldview-2', 1.8, 'Optical',
-    'RE', 'RapidEye', 5, 'Optical',
-    'S1', 'Sentinel-1', 10, 'RADAR',
-    'HLS', 'Harmonized Landsat Sentinel-2', 30, 'Optical',
-    'CBERS-4', 'CBERS-4', 8, 'Optical',
-    'PALSAR2', 'PALSAR-2', 25, 'RADAR',
-    'Aerial HS', 'Aerial hyperspectral', 0.1, 'Optical',
-    'Aerial', 'Aerial multispectral', 0.1, 'Optical',
-    'K3', 'Kompsat-3', 2.8, 'Optical',
-    'MODIS', 'MODIS', 250, 'Optical',
-    'FORMOSAT-2', 'FORMOSAT-2', 2, 'Optical',
-    'L7', 'Landsat-7', 30, 'Optical'
-  )
-}
-
-#get Number of articles per application
-compare_pubs_apps_summ = rscompare2_df %>%
-  group_by(RS_compare_application) %>%
-  summarise(n_application_pubs = n())
-
-#get dataframe in long format for plotting, add additional information about RS datasets and publications
-rscompare2_df_long <- rscompare2_df %>%
-  pivot_longer(cols = all_of(rs_compare_systems_cols),
-               names_to = 'RS_dataset_compared',
-               values_to = 'ps_performance_gain') %>%
-  filter(!is.na(ps_performance_gain)) %>%
-  mutate(RS_dataset_compared = sub("_.*", "", RS_dataset_compared)) %>%
-  merge(rs_replacement_map, by.x = 'RS_dataset_compared', by.y = 'original_label') %>%
-  rename(RS_dataset_name = replacement) %>%
-  # merge(compare_pubs_apps_summ) %>%
-  mutate(RS_compare_application = case_match( #relabel or aggregate applications
-    RS_compare_application,
-    c('Canopy cover', 'Canopy height', 'Canopy openness', 'Max gap', 'Mean gap') ~ 'Canopy structural metrics',
-    c('Stem diameter', 'Stem density', 'Basal area') ~ 'Stem structural metrics',
-    .default = RS_compare_application
-  )) %>%
-  mutate(RS_dataset_name = case_match( #relabel rs dataset names for plotting
-    RS_dataset_name,
-    'Aerial multispectral' ~ 'Aerial MS',
-    'Aerial hyperspectral' ~ 'Aerial HS',
-    'Harmonized Landsat Sentinel-2' ~ 'HLS',
-    .default = RS_dataset_name
-  ))
-#give publicaton titles identifying numbers for plotting
-# title_id_df = tibble(Citation = rscompare2_df_long$Citation[rscompare2_df_long$RS_dataset_name != 'Fused'],
-#                      Title = unique(rscompare2_df_long$Title[rscompare2_df_long$RS_dataset_name != 'Fused']),
-#                      title_id_number = 1:length(unique(rscompare2_df_long$Title[rscompare2_df_long$RS_dataset_name != 'Fused'])))
-title_id_df = rscompare2_df_long %>% 
-  filter(RS_dataset_name != 'Fused') %>% 
-  distinct(Citation, Title) %>%
-  arrange(toupper(Citation)) %>%
-  mutate(title_id_number = row_number())
-rscompare2_df_long = merge(rscompare2_df_long, title_id_df)
-
-#### stats and information about comparison publications
-
-# get Number of articles per application
-compare_pubs_apps_summ = rscompare2_df %>%
-  group_by(RS_compare_application) %>%
-  summarise(n_application_pubs = n())
-
-# Number of articles which use different stats
-compare_stats_summ = rscompare2_df %>% 
-  group_by(compare_stat) %>%
-  summarise(count = n())
-
-#number of comparisons per dataset
-rs_compare_pubs_summ = rscompare2_df_long %>%
-  group_by(RS_dataset_name) %>%
-  summarise(count = n())
-
-
-#### plot all performance comparisons colored by application
-#color palettes
-{
-  
-  colors18_1 = c("#E41A1C", "#377EB8", "#4DAF4A", "#FF7F00", "#FFFF33", 
-                 "#A65628", "#984EA3", "#999999", "#FF99FF", "#CCFF33", 
-                 "#66C2A5", "#FC8D62", "#8DA0CB", "#FFD92F", "#E78AC3", 
-                 "#A6D854", "#FFD92F", "#F9C9D9", "#F7B7A3")
-  
-  colors18_2 = c(
-    "#D73027", "blue", 'darkgreen', "#1A9850", "#F46D43", "#762A83"
-    ,"#FFD92F", 'grey', "#66C2A5", "#E78AC3", "#A6761D", 'magenta'
-    , "#FB9A99", "#1F78B4", "#B2DF8A", "grey30", "black", 'darkred')
-  
-  colors14_2 = c(
-    "#D73027", 
-    "blue", 
-    'darkgreen', 
-    # "#1A9850", 
-    "#F46D43", 
-    "#762A83",
-    # "#FFD92F",
-    'yellow3',
-    # 'grey', 
-    "#66C2A5", 
-    "#E78AC3", 
-    "#A6761D", 
-    'magenta',
-    "#FB9A99", 
-    "#1F78B4", 
-    # "#B2DF8A", 
-    "grey30", 
-    # "black", 
-    'darkred'
-  )
-  
-  }
-
-#scatter, categories on y axis (Old)
-{
-  #   
-  # ggplot(rscompare2_df_long 
-  #        , aes(
-  #          x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = TRUE),
-  #          color = RS_compare_application,
-  #          y = ps_performance_gain
-  #          # , shape = stat
-  #          # , shape = has_textures
-  #          # , size = spatial_resolution
-  #        )) +
-  #   geom_jitter(
-  #     size = 4
-  #     ,alpha = 0.7
-  #     ,width = 0.1
-  #   ) +
-  #   geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
-  #   scale_y_continuous(breaks = seq(-0.5, 0.5, by = 0.05)
-  #                      # , limits = c(-0.53, 0.53)
-  #                      , limits = c(-0.53, 0.4)
-  #   )+
-  #   scale_x_discrete(labels = label_wrap(12)) +
-  #   labs(
-  #     y = 'Performance gain',
-  #     color = 'Application (# references)',
-  #     shape = 'Statistic'
-  #   )+
-  #   scale_color_manual(values = colors14_2)+
-  #   theme_classic()+
-  #   theme(
-  #     axis.title.y = element_blank()
-  #   )+
-  #   guides(size = 'none') +
-  #   scale_y_break(c(-0.495,-0.15))+
-  #   scale_y_break(c(0.10,0.35))+
-  #   coord_flip()
-  
-}
-
-#scatter, categories on x axis
-{
-  plot_compare_scat_xcats = ggplot(rscompare2_df_long 
-                                   , aes(
-                                     x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = F),
-                                     color = RS_compare_application,
-                                     label = title_id_number,
-                                     y = ps_performance_gain
-                                   )) +
-    #plot lines between categories
-    geom_vline(xintercept = 1.5 + 1:length(unique(rscompare2_df_long$RS_dataset_name))-1, color = 'lightgrey', linetype = "solid", size = 0.5) +
-    #plot horizontal line at performance gain = 0
-    geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
-    #plot points
-    geom_jitter(
-      size = 1.5
-      ,alpha = 0.5
-      ,width = 0.15
-    ) +
-    #set y axis parameters
-    scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
-                       # , limits = c(-0.53, 0.53)
-                       # , limits = c(-0.53, 0.4)
-    )+
-    # #plot text labels for each point identifying the publication that the point came from
-    # geom_text_repel(
-    #   size = 2,
-    #   max.overlaps = Inf,
-    #   seed = 123,
-    #   min.segment.length = 0.4,
-    #   segment.size = 0.3,
-    #   force = 2.5,
-    #   force_pull = 0.5,
-    #   show.legend = F
-    # )+
-    scale_x_discrete(labels = label_wrap(12)) +
-    labs(
-      y = 'Performance gain',
-      color = 'Application (# publications, # comparisons)',
-      shape = 'Statistic'
-    )+
-    scale_color_manual(values = colors14_2)+
-    theme_classic()+
-    theme(
-      axis.title.x = element_blank(),
-      axis.text.x = element_text(angle = 30,hjust = 1))+
-    ##break y axis for readability (NOTE: commented out since ggbreak does not work with ggrepel)
-    # scale_y_break(c(-0.495,-0.2))+
-    # scale_y_break(c(0.10,0.35))+
-    guides(size = 'none') 
-  
-  plot_compare_scat_xcats
-}
-
-#boxplot, categories on x axis
-{
-  plot_compare_box_xcats = ggplot(rscompare2_df_long 
-                                  , aes(
-                                    x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = F),
-                                    y = ps_performance_gain
-                                  )) +
-    #plot lines between categories
-    geom_vline(xintercept = 1.5 + 1:length(unique(rscompare2_df_long$RS_dataset_name))-1, color = 'lightgrey', linetype = "solid", size = 0.5) +
-    #plot horizontal line at performance gain = 0
-    geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
-    geom_boxplot()+
-    scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
-                       # , limits = c(-0.53, 0.53)
-                       # , limits = c(-0.53, 0.4)
-    )+
-    scale_x_discrete(labels = label_wrap(12)) +
-    labs(
-      y = 'Performance gain',
-      color = 'Application',
-      shape = 'Statistic'
-    )+
-    scale_color_manual(values = colors14_2)+
-    theme_classic()+
-    theme(
-      axis.title.x = element_blank()
-      # ,axis.text.x = element_text(angle = 30,hjust = 1)
-      ,axis.text.x = element_blank()
-      # ,axis.line.x = element_blank()
-      ,axis.ticks.x = element_blank()
-    )+
-    guides(size = 'none')
-  
-  
-  plot_compare_box_xcats
-}
-
-#facet_wrap with both box and scatter arranged together
-{
-  
-  plot_compare_box_xcats / plot_compare_scat_xcats
-}
-
-#put scatterplot overlaying boxplot ****
-{
-  
-  
-  ggplot(data = rscompare2_df_long,
-         aes(
-           x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = F),
-           # color = RS_compare_application,
-           label = title_id_number,
-           y = ps_performance_gain
-         )) +
-    #add boxplot
-    geom_boxplot( 
-      # data = rscompare2_df_long %>% 
-      #               filter(RS_dataset_name %in% rs_compare_pubs_summ$RS_dataset_name[rs_compare_pubs_summ$count > 1])
-      # ,
-      color = 'grey50'
-      ,outliers = F
-    )+
-    #plot lines between categories
-    geom_vline(xintercept = 1.5 + 1:length(unique(rscompare2_df_long$RS_dataset_name))-1, color = 'lightgrey', linetype = "solid", size = 0.5) +
-    #plot vline to separate lower spatial resolution datasets from higher spatial resolution
-    geom_vline(xintercept = 1.5+4)+
-    #plot horizontal line at performance gain = 0
-    geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
-    ##plot points
-    # geom_jitter(
-    #   size = 1.5
-    #   ,alpha = 0.5
-    #   ,width = 0.15
-    #   ,aes(color = RS_compare_application)
-    # ) +
-    geom_point(
-      aes(color = RS_compare_application),  # Aesthetics inside aes()
-      size = 1.5,                           # Point size
-      alpha = 0.7,                          # Transparency
-      position = position_dodge(width = 0.7) # Correct placement of position_dodge()
-    )+
-    scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
-                       # , limits = c(-0.53, 0.53)
-                       # , limits = c(-0.53, 0.4)
-    )+
-    scale_x_discrete(labels = label_wrap(12)) +
-    labs(
-      y = 'Performance gain',
-      color = 'Application',
-      shape = 'Statistic'
-    )+
-    scale_color_manual(values = application_colors)+
-    theme_classic()+
-    theme(
-      axis.title.x = element_blank()
-      ,axis.text.x = element_text(angle = 30,hjust = 1)
-      # ,axis.text.x = element_blank()
-      # ,axis.line.x = element_blank()
-      # ,axis.ticks.x = element_blank()
-    )+
-    guides(size = 'none')
-  
-}
-
-### factors affecting planetscope performance gain
-{
-  #other remote sensing dataset
-  {
-    #Wilcoxon signed rank tests
-    
-    a = wilcox.test(rscompare2_df_long$ps_performance_gain, mu = 0)
-    wilcox_p = sapply(X = unique(rscompare2_df_long$RS_dataset_name), function(rs){
-      # dat = rscompare2_df_long %>% filter(RS_dataset_name == rs)
-      dat = rscompare2_df_long$ps_performance_gain[rscompare2_df_long$RS_dataset_name == rs]
-      wilc = wilcox.test(dat, mu = 0)
-      return(wilc[['p.value']])
-    })
-    rs_compare_sig = tibble(rs = unique(rscompare2_df_long$RS_dataset_name), wilcox_p = wilcox_p)
-    
-    wilcox_spat = wilcox.test(x = rscompare2_df_long$ps_performance_gain[rscompare2_df_long$spatial_resolution > 3],
-                              y = rscompare2_df_long$ps_performance_gain[rscompare2_df_long$spatial_resolution < 3])
-    summary(wilcox_spat)
-    
-    
-    #number pubs by sensor type
-    a = rs_type_df %>% mutate(RS_systems = toupper(RS_systems))
-    rs_compare_pubs_summ %>% 
-      mutate(RS_dataset_name = toupper(RS_dataset_name)) %>%
-      mutate(RS_dataset_name = case_match(RS_dataset_name,
-                                          ' MS' ~ ' multispectral',
-                                          ' HS' ~ ' hyperspectral',
-                                          'HLS' ~ 'Harmonized Landsat Sentinel-2',
-                                          .default = RS_dataset_name)) %>%
-      left_join(a, by = join_by(RS_dataset_name == RS_systems))
-    
-    #pearson correlation between performance gain and spatial resolution of dataset
-    
-    correlation = cor(rscompare2_df_long %>% select(ps_performance_gain, spatial_resolution))
-    
-    degree <- 1:5
-    lm_l <- list()
-    r2_l <- list()
-    aic_l <- list()
-    
-    lapply(degree, function(i) {
-      model <- lm(data = rscompare2_df_long, formula = ps_performance_gain ~ poly(spatial_resolution, i))
-      lm_l[[i]] <<- model  # Use <<- to assign in the outer environment
-      
-      summ <- summary(model)
-      r2_l[[i]] <<- summ$r.squared
-      
-      aic_l[[i]] <<- AIC(model)
-    })
-    
-    lm_tbl <- tibble(degree, lm = lm_l, r2 = unlist(r2_l), aic = unlist(aic_l))
-    lm_tbl
-  }
-  
-  #year of data acquisition
-  {
-    #correlation performance gain versus data acquisition year
-    
-    cor_year_df = rscompare2_df_long %>%
-      filter(!is.na(Acquisition_years)) %>%
-      filter(Acquisition_years != 'NA')
-    
-    mean_acq_year = sapply(X = cor_year_df$Acquisition_years, function(a){
-      b = mean(as.numeric(str_split_1(a, ', ')))
-      b
-    })
-    
-    mean_year_cor = cor(x = cor_year_df$ps_performance_gain, 
-                        y = mean_acq_year)
-    mean_year_comp_lm = lm(cor_year_df$ps_performance_gain ~ mean_acq_year)
-    summary(mean_year_comp_lm)
-    
-    min_acq_year = sapply(X = cor_year_df$Acquisition_years, function(a){
-      b = min(as.numeric(str_split_1(a, ', ')))
-      b
-    })
-    min_year_cor = cor(x = cor_year_df$ps_performance_gain, 
-                       y = min_acq_year)
-    min_year_comp_lm = lm(cor_year_df$ps_performance_gain ~ min_acq_year)
-    summary(min_year_comp_lm)
-    
-    max_acq_year = sapply(X = cor_year_df$Acquisition_years, function(a){
-      b = max(as.numeric(str_split_1(a, ', ')))
-      b
-    })
-    max_year_cor = cor(x = cor_year_df$ps_performance_gain, 
-                       y = max_acq_year)
-    max_year_comp_lm = lm(cor_year_df$ps_performance_gain ~ max_acq_year)
-    summary(max_year_comp_lm)
-    
-    
-    plotting_tbl = tibble(gain = cor_year_df$ps_performance_gain, mean_acq_year, min_acq_year, max_acq_year) %>%
-      pivot_longer(cols = c('mean_acq_year', 'min_acq_year', 'max_acq_year')
-                   , names_to = 'acq_year'
-                   , values_to = 'year')
-    ggplot(plotting_tbl, aes(x = year, y = gain, color = acq_year)) +
-      geom_point(alpha = 0.5) +  
-      # geom_smooth(method = 'lm',
-      #             formula = plotting_tbl$gain[plotting_tbl$acq_year == 'mean_acq_year'] ~ plotting_tbl$year[plotting_tbl$acq_year == 'mean_acq_year'])
-      geom_smooth(
-        data = subset(plotting_tbl, acq_year == "min_acq_year"),
-        method = "lm"
-        , se = F
-        , aes(color = "min_acq_year")
-      ) +
-      geom_smooth(
-        data = subset(plotting_tbl, acq_year == "mean_acq_year"),
-        method = "lm"
-        , se = F
-        , aes(color = "mean_acq_year")
-      ) +
-      geom_smooth(
-        data = subset(plotting_tbl, acq_year == "max_acq_year"),
-        method = "lm"
-        , se = F
-        , aes(color = "max_acq_year")
-      )
-    
-    #performance gain versus publication year
-    pub_year_psgain_lm = lm(cor_year_df$ps_performance_gain ~ cor_year_df$Publication.Year)
-    summary(pub_year_psgain_lm)
-    
-    #sentinel_2 versus data acquisition year
-    cor_year_df$mean_acq_year = mean_acq_year
-    s2_mean_acq_year_lm = lm(ps_performance_gain ~ mean_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Sentinel-2'))
-    a = summary(s2_mean_acq_year_lm)
-    
-    cor_year_df$min_acq_year = min_acq_year
-    s2_min_acq_year_lm = lm(ps_performance_gain ~ min_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Sentinel-2'))
-    b = summary(s2_min_acq_year_lm)
-    
-    cor_year_df$max_acq_year = max_acq_year
-    s2_max_acq_year_lm = lm(ps_performance_gain ~ max_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Sentinel-2'))
-    c = summary(s2_max_acq_year_lm)
-    
-    acq_year_var = c('mean_acq_year', 'min_acq_year', 'max_acq_year')
-    
-    s2_acq_year_tbl = tribble(
-      ~acq_year_type, ~p_value, ~r2,
-      as.character(a$terms[[3]]), a$coefficients[2,4], a$r.squared,
-      as.character(b$terms[[3]]), b$coefficients[2,4], b$r.squared,
-      as.character(c$terms[[3]]), c$coefficients[2,4], c$r.squared
-    )
-    
-    #Landsat-8 versus acquisition year (no significant findings)
-    L8_mean_acq_year_lm = lm(ps_performance_gain ~ mean_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Landsat-8'))
-    summary(L8_mean_acq_year_lm)
-    
-    L8_min_acq_year_lm = lm(ps_performance_gain ~ min_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Landsat-8'))
-    summary(L8_min_acq_year_lm)
-    
-    L8_max_acq_year_lm = lm(ps_performance_gain ~ max_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Landsat-8'))
-    summary(L8_max_acq_year_lm)
-    
-    #graph Sentinel-2 performance gain versus data acquisition year ***
-    
-    
-    intercept = s2_max_acq_year_lm$coefficients[1]
-    coef = s2_max_acq_year_lm$coefficients[2]
-    
-    ggplot(cor_year_df %>% filter(RS_dataset_name == 'Sentinel-2'), aes(x = max_acq_year, y = ps_performance_gain))+
-      geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
-      geom_smooth(method = 'lm'
-                  ,se = F)+
-      geom_point(aes(color = RS_compare_application)
-                 , alpha = 0.5
-                 ,size = 2.5
-      )+
-      scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
-                         # , limits = c(-0.53, 0.53)
-                         # , limits = c(-0.53, 0.4)
-      )+
-      # scale_x_discrete(labels = label_wrap(12)) +
-      labs(
-        y = 'Performance gain',
-        color = 'Application',
-        shape = 'Statistic',
-        x = 'Planetscope data acquisition year (max)'
-      )+
-      # stat_regline_equation()+
-      # geom_text(x = 2019, y = -0.3,
-      #           label = paste0('y = ',round(intercept, digits = 3),' + ',round(coef, digits = 3),'x'
-      #                          ,'\nr2 = ',round(s2_acq_year_tbl$r2[3],digits=3),', p = ',round(s2_acq_year_tbl$p_value[3],digits=3))
-      #           ,fontface = "plain"  # Use plain font
-      #           ,family = "sans"  # Set font family
-      #           )+
-      annotate(
-        "text",
-        x = 2018, 
-        y = -0.3,
-        label = paste0('y = ', round(intercept, digits = 3), ' + ', round(coef, digits = 3), 'x',
-                       '\nr² = ', round(s2_acq_year_tbl$r2[3], digits = 3), ', p = ', round(s2_acq_year_tbl$p_value[3], digits = 3)),
-        hjust = 0,  # Horizontal justification
-        vjust = 0,  # Vertical justification
-        size = 4,   # Adjust text size as needed
-        fontface = "plain",  # Set font to plain
-        family = "sans"  # Set font family
-      ) +
-      scale_color_manual(values = application_colors)+
-      theme_classic()
-    
-  }  
-  
-  #application
-  {
-    n_application_comparisons = rscompare2_df_long %>% 
-      group_by(RS_compare_application) %>% 
-      summarise(n_application_comparisons = n())
-    
-    
-    n_pubs_comparisons = rscompare2_df %>% 
-      group_by(RS_compare_application) %>% 
-      summarise(n_publication_comparisons = n())
-    
-    rscompare2_df_long = rscompare2_df_long %>% 
-      merge(n_application_comparisons) %>%
-      merge(n_pubs_comparisons) %>%
-      mutate(RS_compare_application_label = paste0(RS_compare_application, '(',n_application_comparisons,n_publication_comparisons,')'))
-    
-    # application
-    {
-      
-      
-      ggplot(data = rscompare2_df_long %>% filter(n_application_comparisons > 4),
-             aes(
-               x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = F),
-               color = RS_compare_application_label,
-               label = title_id_number,
-               y = ps_performance_gain
-             )) +
-        #add boxplot
-        # geom_boxplot( 
-        #   # data = rscompare2_df_long %>% 
-        #   #               filter(RS_dataset_name %in% rs_compare_pubs_summ$RS_dataset_name[rs_compare_pubs_summ$count > 1])
-        #   # ,
-        #   color = 'grey50'
-        #   ,outliers = F
-        # )+
-        #plot lines between categories
-        geom_vline(xintercept = 1.5 + 1:length(unique(rscompare2_df_long$RS_dataset_name))-1, color = 'lightgrey', linetype = "solid", size = 0.5) +
-        #plot vline to separate lower spatial resolution datasets from higher spatial resolution
-        geom_vline(xintercept = 1.5+4)+
-        #plot horizontal line at performance gain = 0
-        geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
-        #plot points
-        geom_jitter(
-          size = 5
-          ,alpha = 0.5
-          ,width = 0.5
-          ,aes(color = RS_compare_application_label)
-        ) +
-        geom_text_repel(
-          size = 3,
-          max.overlaps = Inf,
-          seed = 123,
-          min.segment.length = 0.4,
-          segment.size = 0.3,
-          force = 3.5,
-          force_pull = 0.5,
-          show.legend = F
-        )+
-        scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
-                           # , limits = c(-0.53, 0.53)
-                           # , limits = c(-0.53, 0.4)
-        )+
-        scale_x_discrete(labels = label_wrap(12)) +
-        labs(
-          y = 'Performance gain',
-          color = 'Application (# comparisons, # publications)',
-          shape = 'Statistic'
-        )+
-        scale_color_manual(values = colors14_2)+
-        theme_classic()+
-        theme(
-          axis.title.x = element_blank()
-          ,axis.text.x = element_text(angle = 30,hjust = 1)
-          # ,axis.text.x = element_blank()
-          # ,axis.line.x = element_blank()
-          # ,axis.ticks.x = element_blank()
-        )+
-        guides(size = 'none')
-      
-      }
-    
-    # time series
-    {
-      rscompare2_df_long$PS_timeseries = toupper(rscompare2_df_long$PS_timeseries)
-      #ggplot
-      {
-        
-        
-        ggplot(data = rscompare2_df_long 
-               # %>% filter(n_application_comparisons > 3)
-               ,aes(
-                 x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = F),
-                 shape = toupper(PS_timeseries),
-                 color = RS_compare_application_label,
-                 label = title_id_number,
-                 y = ps_performance_gain
-               )) +
-          #add boxplot
-          # geom_boxplot( 
-          #   # data = rscompare2_df_long %>% 
-          #   #               filter(RS_dataset_name %in% rs_compare_pubs_summ$RS_dataset_name[rs_compare_pubs_summ$count > 1])
-          #   # ,
-          #   color = 'grey50'
-          #   ,outliers = F
-          # )+
-          #plot lines between categories
-          geom_vline(xintercept = 1.5 + 1:length(unique(rscompare2_df_long$RS_dataset_name))-1, color = 'lightgrey', linetype = "solid", size = 0.5) +
-          #plot vline to separate lower spatial resolution datasets from higher spatial resolution
-          geom_vline(xintercept = 1.5+4)+
-          #plot horizontal line at performance gain = 0
-          geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
-          #plot points
-          geom_jitter(
-            size = 5
-            ,alpha = 0.5
-            ,width = 0.3
-            # ,aes(color = RS_compare_application_label)
-          ) +
-          geom_text_repel(
-            size = 3,
-            max.overlaps = Inf,
-            seed = 123,
-            min.segment.length = 0.4,
-            segment.size = 0.3,
-            force = 3.5,
-            force_pull = 0.5,
-            show.legend = F
-          )+
-          scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
-                             # , limits = c(-0.53, 0.53)
-                             # , limits = c(-0.53, 0.4)
-          )+
-          scale_x_discrete(labels = label_wrap(12)) +
-          labs(
-            y = 'Performance gain',
-            color = 'Application',
-            shape = 'Timeseries used'
-          )+
-          scale_color_manual(values = colors14_2)+
-          theme_classic()+
-          theme(
-            axis.title.x = element_blank()
-            ,axis.text.x = element_text(angle = 30,hjust = 1)
-            # ,axis.text.x = element_blank()
-            # ,axis.line.x = element_blank()
-            # ,axis.ticks.x = element_blank()
-          )+
-          guides(size = 'none')
-      }
-      
-      #significance testing
-      {
-        #equal variances?
-        leveneTest(ps_performance_gain ~ PS_timeseries, data = rscompare2_df_long)
-        shapiro.test(rscompare2_df_long$ps_performance_gain)
-        
-        timeseries_wilcox = wilcox.test(x = rscompare2_df_long$ps_performance_gain[rscompare2_df_long$PS_timeseries=='N'],
-                                        y = rscompare2_df_long$ps_performance_gain[rscompare2_df_long$PS_timeseries=='Y'])
-      }
-    }
-  }
-}
+# {
+#   #clean RS comparison performance data
+#   new_app_delimiter = '$ '  
+#   
+#   rscompare2_df = df %>%
+#     filter(!is.na(RS_performance_to_aggregate)) %>% #remove NA values
+#     mutate(RS_performance_to_aggregate = str_replace_all(RS_performance_to_aggregate, ';; ', new_app_delimiter)) %>% #cSplit doesn't work well with more than two characters for sep, so change ;; to a different value
+#     cSplit(splitCols = 'RS_performance_to_aggregate', direction = 'long', sep = new_app_delimiter) #split by application (top level delimiter)
+#   for(i in 1:nrow(rscompare2_df)){ #if the application is specified in RS_performance_to_aggregate then use it, otherwise get application from Application_cleaned column
+#     perf = rscompare2_df$RS_performance_to_aggregate[i]
+#     rscompare2_df$RS_compare_application[i] = ifelse(str_detect(perf, ':: '),
+#                                                      str_split_1(perf, ':: ')[1],
+#                                                      rscompare2_df$Application_cleaned[i])
+#   }
+#   #remove applications from RS_performance_to_compare column
+#   rscompare2_df = rscompare2_df %>% mutate(RS_performance_to_aggregate = ifelse(str_detect(RS_performance_to_aggregate, ':: '),
+#                                                                                 str_extract(RS_performance_to_aggregate,"(?<=:: ).*"),
+#                                                                                 RS_performance_to_aggregate))
+#   
+#   #initialize new columns columns to contain the performance statistic and performance gain for the different remote sensing systems
+#   rs_compare_systems = rscompare2_df$RS_performance_to_aggregate %>% str_split('; ') %>% unlist() %>% str_extract("^[^:]+") %>% unique()
+#   rs_compare_systems_cols = paste0(rs_compare_systems,'_gain')
+#   for(i in 1:length(rs_compare_systems_cols)){rscompare2_df[[rs_compare_systems_cols[i]]]=NA}
+#   rscompare2_df$compare_stat = NA
+#   
+#   # view(rscompare2_df %>% select(RS_compare_application, RS_performance_to_aggregate))
+#   
+#   # rs_compare_cols = c()
+#   checker = c()
+# }
+# for(i in 1:nrow(rscompare2_df)){
+#   
+#   col = rscompare2_df$RS_performance_to_aggregate #column where performance stats are contained
+#   
+#   sys_list = unlist(str_split(col[i], '; ')) #split the string into different RS datasets based on the delimiter '; '
+#   ps_index = which(str_detect(sys_list, 'PS')) #get the index of which item in sys_list contains the Planetscope information
+#   ps_performance = as.numeric(str_split_1(str_extract(sys_list[ps_index], "(?<= = ).*"),', ')) #get Planetscope performance
+#   other_rs_list = sys_list[-ps_index] #get list of remote sensing data without the planetscope data
+#   
+#   compare_stat = str_extract(sys_list[ps_index], "(?<=: ).*(?= =)") #get the performance statistic (occurs between ": " and " =")
+#   rscompare2_df$compare_stat[i] = compare_stat
+#   
+#   for(j in 1:length(other_rs_list)){
+#     
+#     rs_name = str_split_1(other_rs_list[j],": ")[1] #get the name of the other remote sensing dataset
+#     #get the analysis performance associated with the other remote sensing dataset
+#     rs_performance = as.numeric(str_split_1(str_extract(other_rs_list[j], ifelse(str_detect(other_rs_list[j],'='), "(?<= = ).*", '(?<=: ).*'))
+#                                             ,
+#                                             ', '))
+#     performance_gain = mean(ps_performance - rs_performance)
+#     
+#     
+#     performance_gain_col = paste0(rs_name,'_gain')
+#     
+#     rscompare2_df[[performance_gain_col]][i] = performance_gain
+#     
+#     # if(!(performance_gain_col %in% rs_compare_cols)){
+#     #   rs_compare_cols[length(rs_compare_cols)+1] = performance_gain_col
+#     # }
+#   }
+#   checker[i] = i #data cleaning/debugging tool which returns the row before teh one which fails, comment out if not using
+# }
+# 
+# 
+# #make dataframe for remote sensing datasets to recode labels
+# {
+#   rs_replacement_map = tribble(
+#     ~original_label, ~replacement, ~spatial_resolution, ~sensor_type,
+#     'S2', 'Sentinel-2', 10, 'Optical',
+#     'L8', 'Landsat-8', 30, 'Optical',
+#     'WV2', 'Worldview-2', 1.8, 'Optical',
+#     'W2', 'Worldview-2', 1.8, 'Optical',
+#     'RE', 'RapidEye', 5, 'Optical',
+#     'S1', 'Sentinel-1', 10, 'RADAR',
+#     'HLS', 'Harmonized Landsat Sentinel-2', 30, 'Optical',
+#     'CBERS-4', 'CBERS-4', 8, 'Optical',
+#     'PALSAR2', 'PALSAR-2', 25, 'RADAR',
+#     'Aerial HS', 'Aerial hyperspectral', 0.1, 'Optical',
+#     'Aerial', 'Aerial multispectral', 0.1, 'Optical',
+#     'K3', 'Kompsat-3', 2.8, 'Optical',
+#     'MODIS', 'MODIS', 250, 'Optical',
+#     'FORMOSAT-2', 'FORMOSAT-2', 2, 'Optical',
+#     'L7', 'Landsat-7', 30, 'Optical'
+#   )
+# }
+# 
+# #get Number of articles per application
+# compare_pubs_apps_summ = rscompare2_df %>%
+#   group_by(RS_compare_application) %>%
+#   summarise(n_application_pubs = n())
+# 
+# #get dataframe in long format for plotting, add additional information about RS datasets and publications
+# rscompare2_df_long <- rscompare2_df %>%
+#   pivot_longer(cols = all_of(rs_compare_systems_cols),
+#                names_to = 'RS_dataset_compared',
+#                values_to = 'ps_performance_gain') %>%
+#   filter(!is.na(ps_performance_gain)) %>%
+#   mutate(RS_dataset_compared = sub("_.*", "", RS_dataset_compared)) %>%
+#   merge(rs_replacement_map, by.x = 'RS_dataset_compared', by.y = 'original_label') %>%
+#   rename(RS_dataset_name = replacement) %>%
+#   # merge(compare_pubs_apps_summ) %>%
+#   mutate(RS_compare_application = case_match( #relabel or aggregate applications
+#     RS_compare_application,
+#     c('Canopy cover', 'Canopy height', 'Canopy openness', 'Max gap', 'Mean gap') ~ 'Canopy structural metrics',
+#     c('Stem diameter', 'Stem density', 'Basal area') ~ 'Stem structural metrics',
+#     .default = RS_compare_application
+#   )) %>%
+#   mutate(RS_dataset_name = case_match( #relabel rs dataset names for plotting
+#     RS_dataset_name,
+#     'Aerial multispectral' ~ 'Aerial MS',
+#     'Aerial hyperspectral' ~ 'Aerial HS',
+#     'Harmonized Landsat Sentinel-2' ~ 'HLS',
+#     .default = RS_dataset_name
+#   ))
+# #give publicaton titles identifying numbers for plotting
+# # title_id_df = tibble(Citation = rscompare2_df_long$Citation[rscompare2_df_long$RS_dataset_name != 'Fused'],
+# #                      Title = unique(rscompare2_df_long$Title[rscompare2_df_long$RS_dataset_name != 'Fused']),
+# #                      title_id_number = 1:length(unique(rscompare2_df_long$Title[rscompare2_df_long$RS_dataset_name != 'Fused'])))
+# title_id_df = rscompare2_df_long %>% 
+#   filter(RS_dataset_name != 'Fused') %>% 
+#   distinct(Citation, Title) %>%
+#   arrange(toupper(Citation)) %>%
+#   mutate(title_id_number = row_number())
+# rscompare2_df_long = merge(rscompare2_df_long, title_id_df)
+# 
+# #### stats and information about comparison publications
+# 
+# # get Number of articles per application
+# compare_pubs_apps_summ = rscompare2_df %>%
+#   group_by(RS_compare_application) %>%
+#   summarise(n_application_pubs = n())
+# 
+# # Number of articles which use different stats
+# compare_stats_summ = rscompare2_df %>% 
+#   group_by(compare_stat) %>%
+#   summarise(count = n())
+# 
+# #number of comparisons per dataset
+# rs_compare_pubs_summ = rscompare2_df_long %>%
+#   group_by(RS_dataset_name) %>%
+#   summarise(count = n())
+# 
+# 
+# #### plot all performance comparisons colored by application
+# #color palettes
+# {
+#   
+#   colors18_1 = c("#E41A1C", "#377EB8", "#4DAF4A", "#FF7F00", "#FFFF33", 
+#                  "#A65628", "#984EA3", "#999999", "#FF99FF", "#CCFF33", 
+#                  "#66C2A5", "#FC8D62", "#8DA0CB", "#FFD92F", "#E78AC3", 
+#                  "#A6D854", "#FFD92F", "#F9C9D9", "#F7B7A3")
+#   
+#   colors18_2 = c(
+#     "#D73027", "blue", 'darkgreen', "#1A9850", "#F46D43", "#762A83"
+#     ,"#FFD92F", 'grey', "#66C2A5", "#E78AC3", "#A6761D", 'magenta'
+#     , "#FB9A99", "#1F78B4", "#B2DF8A", "grey30", "black", 'darkred')
+#   
+#   colors14_2 = c(
+#     "#D73027", 
+#     "blue", 
+#     'darkgreen', 
+#     # "#1A9850", 
+#     "#F46D43", 
+#     "#762A83",
+#     # "#FFD92F",
+#     'yellow3',
+#     # 'grey', 
+#     "#66C2A5", 
+#     "#E78AC3", 
+#     "#A6761D", 
+#     'magenta',
+#     "#FB9A99", 
+#     "#1F78B4", 
+#     # "#B2DF8A", 
+#     "grey30", 
+#     # "black", 
+#     'darkred'
+#   )
+#   
+#   }
+# 
+# #scatter, categories on y axis (Old)
+# {
+#   #   
+#   # ggplot(rscompare2_df_long 
+#   #        , aes(
+#   #          x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = TRUE),
+#   #          color = RS_compare_application,
+#   #          y = ps_performance_gain
+#   #          # , shape = stat
+#   #          # , shape = has_textures
+#   #          # , size = spatial_resolution
+#   #        )) +
+#   #   geom_jitter(
+#   #     size = 4
+#   #     ,alpha = 0.7
+#   #     ,width = 0.1
+#   #   ) +
+#   #   geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
+#   #   scale_y_continuous(breaks = seq(-0.5, 0.5, by = 0.05)
+#   #                      # , limits = c(-0.53, 0.53)
+#   #                      , limits = c(-0.53, 0.4)
+#   #   )+
+#   #   scale_x_discrete(labels = label_wrap(12)) +
+#   #   labs(
+#   #     y = 'Performance gain',
+#   #     color = 'Application (# references)',
+#   #     shape = 'Statistic'
+#   #   )+
+#   #   scale_color_manual(values = colors14_2)+
+#   #   theme_classic()+
+#   #   theme(
+#   #     axis.title.y = element_blank()
+#   #   )+
+#   #   guides(size = 'none') +
+#   #   scale_y_break(c(-0.495,-0.15))+
+#   #   scale_y_break(c(0.10,0.35))+
+#   #   coord_flip()
+#   
+# }
+# 
+# #scatter, categories on x axis
+# {
+#   plot_compare_scat_xcats = ggplot(rscompare2_df_long 
+#                                    , aes(
+#                                      x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = F),
+#                                      color = RS_compare_application,
+#                                      label = title_id_number,
+#                                      y = ps_performance_gain
+#                                    )) +
+#     #plot lines between categories
+#     geom_vline(xintercept = 1.5 + 1:length(unique(rscompare2_df_long$RS_dataset_name))-1, color = 'lightgrey', linetype = "solid", size = 0.5) +
+#     #plot horizontal line at performance gain = 0
+#     geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
+#     #plot points
+#     geom_jitter(
+#       size = 1.5
+#       ,alpha = 0.5
+#       ,width = 0.15
+#     ) +
+#     #set y axis parameters
+#     scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
+#                        # , limits = c(-0.53, 0.53)
+#                        # , limits = c(-0.53, 0.4)
+#     )+
+#     # #plot text labels for each point identifying the publication that the point came from
+#     # geom_text_repel(
+#     #   size = 2,
+#     #   max.overlaps = Inf,
+#     #   seed = 123,
+#     #   min.segment.length = 0.4,
+#     #   segment.size = 0.3,
+#     #   force = 2.5,
+#     #   force_pull = 0.5,
+#     #   show.legend = F
+#     # )+
+#     scale_x_discrete(labels = label_wrap(12)) +
+#     labs(
+#       y = 'Performance gain',
+#       color = 'Application (# publications, # comparisons)',
+#       shape = 'Statistic'
+#     )+
+#     scale_color_manual(values = colors14_2)+
+#     theme_classic()+
+#     theme(
+#       axis.title.x = element_blank(),
+#       axis.text.x = element_text(angle = 30,hjust = 1))+
+#     ##break y axis for readability (NOTE: commented out since ggbreak does not work with ggrepel)
+#     # scale_y_break(c(-0.495,-0.2))+
+#     # scale_y_break(c(0.10,0.35))+
+#     guides(size = 'none') 
+#   
+#   plot_compare_scat_xcats
+# }
+# 
+# #boxplot, categories on x axis
+# {
+#   plot_compare_box_xcats = ggplot(rscompare2_df_long 
+#                                   , aes(
+#                                     x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = F),
+#                                     y = ps_performance_gain
+#                                   )) +
+#     #plot lines between categories
+#     geom_vline(xintercept = 1.5 + 1:length(unique(rscompare2_df_long$RS_dataset_name))-1, color = 'lightgrey', linetype = "solid", size = 0.5) +
+#     #plot horizontal line at performance gain = 0
+#     geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
+#     geom_boxplot()+
+#     scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
+#                        # , limits = c(-0.53, 0.53)
+#                        # , limits = c(-0.53, 0.4)
+#     )+
+#     scale_x_discrete(labels = label_wrap(12)) +
+#     labs(
+#       y = 'Performance gain',
+#       color = 'Application category',
+#       shape = 'Statistic'
+#     )+
+#     scale_color_manual(values = colors14_2)+
+#     theme_classic()+
+#     theme(
+#       axis.title.x = element_blank()
+#       # ,axis.text.x = element_text(angle = 30,hjust = 1)
+#       ,axis.text.x = element_blank()
+#       # ,axis.line.x = element_blank()
+#       ,axis.ticks.x = element_blank()
+#     )+
+#     guides(size = 'none')
+#   
+#   
+#   plot_compare_box_xcats
+# }
+# 
+# #facet_wrap with both box and scatter arranged together
+# {
+#   
+#   plot_compare_box_xcats / plot_compare_scat_xcats
+# }
+# 
+# #put scatterplot overlaying boxplot ****
+# {
+#   
+#   
+#   ggplot(data = rscompare2_df_long,
+#          aes(
+#            x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = F),
+#            # color = RS_compare_application,
+#            label = title_id_number,
+#            y = ps_performance_gain
+#          )) +
+#     #add boxplot
+#     geom_boxplot( 
+#       # data = rscompare2_df_long %>% 
+#       #               filter(RS_dataset_name %in% rs_compare_pubs_summ$RS_dataset_name[rs_compare_pubs_summ$count > 1])
+#       # ,
+#       color = 'grey50'
+#       ,outliers = F
+#     )+
+#     #plot lines between categories
+#     geom_vline(xintercept = 1.5 + 1:length(unique(rscompare2_df_long$RS_dataset_name))-1, color = 'lightgrey', linetype = "solid", size = 0.5) +
+#     #plot vline to separate lower spatial resolution datasets from higher spatial resolution
+#     geom_vline(xintercept = 1.5+4)+
+#     #plot horizontal line at performance gain = 0
+#     geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
+#     ##plot points
+#     # geom_jitter(
+#     #   size = 1.5
+#     #   ,alpha = 0.5
+#     #   ,width = 0.15
+#     #   ,aes(color = RS_compare_application)
+#     # ) +
+#     geom_point(
+#       aes(color = RS_compare_application),  # Aesthetics inside aes()
+#       size = 1.5,                           # Point size
+#       alpha = 0.7,                          # Transparency
+#       position = position_dodge(width = 0.7) # Correct placement of position_dodge()
+#     )+
+#     scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
+#                        # , limits = c(-0.53, 0.53)
+#                        # , limits = c(-0.53, 0.4)
+#     )+
+#     scale_x_discrete(labels = label_wrap(12)) +
+#     labs(
+#       y = 'Performance gain',
+#       color = 'Application category',
+#       shape = 'Statistic'
+#     )+
+#     scale_color_manual(values = application_colors)+
+#     theme_classic()+
+#     theme(
+#       axis.title.x = element_blank()
+#       ,axis.text.x = element_text(angle = 30,hjust = 1)
+#       # ,axis.text.x = element_blank()
+#       # ,axis.line.x = element_blank()
+#       # ,axis.ticks.x = element_blank()
+#     )+
+#     guides(size = 'none')
+#   
+# }
+# 
+# ### factors affecting planetscope performance gain
+# {
+#   #other remote sensing dataset
+#   {
+#     #Wilcoxon signed rank tests
+#     
+#     a = wilcox.test(rscompare2_df_long$ps_performance_gain, mu = 0)
+#     wilcox_p = sapply(X = unique(rscompare2_df_long$RS_dataset_name), function(rs){
+#       # dat = rscompare2_df_long %>% filter(RS_dataset_name == rs)
+#       dat = rscompare2_df_long$ps_performance_gain[rscompare2_df_long$RS_dataset_name == rs]
+#       wilc = wilcox.test(dat, mu = 0)
+#       return(wilc[['p.value']])
+#     })
+#     rs_compare_sig = tibble(rs = unique(rscompare2_df_long$RS_dataset_name), wilcox_p = wilcox_p)
+#     
+#     wilcox_spat = wilcox.test(x = rscompare2_df_long$ps_performance_gain[rscompare2_df_long$spatial_resolution > 3],
+#                               y = rscompare2_df_long$ps_performance_gain[rscompare2_df_long$spatial_resolution < 3])
+#     summary(wilcox_spat)
+#     
+#     
+#     #number pubs by sensor type
+#     a = rs_type_df %>% mutate(RS_systems = toupper(RS_systems))
+#     rs_compare_pubs_summ %>% 
+#       mutate(RS_dataset_name = toupper(RS_dataset_name)) %>%
+#       mutate(RS_dataset_name = case_match(RS_dataset_name,
+#                                           ' MS' ~ ' multispectral',
+#                                           ' HS' ~ ' hyperspectral',
+#                                           'HLS' ~ 'Harmonized Landsat Sentinel-2',
+#                                           .default = RS_dataset_name)) %>%
+#       left_join(a, by = join_by(RS_dataset_name == RS_systems))
+#     
+#     #pearson correlation between performance gain and spatial resolution of dataset
+#     
+#     correlation = cor(rscompare2_df_long %>% select(ps_performance_gain, spatial_resolution))
+#     
+#     degree <- 1:5
+#     lm_l <- list()
+#     r2_l <- list()
+#     aic_l <- list()
+#     
+#     lapply(degree, function(i) {
+#       model <- lm(data = rscompare2_df_long, formula = ps_performance_gain ~ poly(spatial_resolution, i))
+#       lm_l[[i]] <<- model  # Use <<- to assign in the outer environment
+#       
+#       summ <- summary(model)
+#       r2_l[[i]] <<- summ$r.squared
+#       
+#       aic_l[[i]] <<- AIC(model)
+#     })
+#     
+#     lm_tbl <- tibble(degree, lm = lm_l, r2 = unlist(r2_l), aic = unlist(aic_l))
+#     lm_tbl
+#   }
+#   
+#   #year of data acquisition
+#   {
+#     #correlation performance gain versus data acquisition year
+#     
+#     cor_year_df = rscompare2_df_long %>%
+#       filter(!is.na(Acquisition_years)) %>%
+#       filter(Acquisition_years != 'NA')
+#     
+#     mean_acq_year = sapply(X = cor_year_df$Acquisition_years, function(a){
+#       b = mean(as.numeric(str_split_1(a, ', ')))
+#       b
+#     })
+#     
+#     mean_year_cor = cor(x = cor_year_df$ps_performance_gain, 
+#                         y = mean_acq_year)
+#     mean_year_comp_lm = lm(cor_year_df$ps_performance_gain ~ mean_acq_year)
+#     summary(mean_year_comp_lm)
+#     
+#     min_acq_year = sapply(X = cor_year_df$Acquisition_years, function(a){
+#       b = min(as.numeric(str_split_1(a, ', ')))
+#       b
+#     })
+#     min_year_cor = cor(x = cor_year_df$ps_performance_gain, 
+#                        y = min_acq_year)
+#     min_year_comp_lm = lm(cor_year_df$ps_performance_gain ~ min_acq_year)
+#     summary(min_year_comp_lm)
+#     
+#     max_acq_year = sapply(X = cor_year_df$Acquisition_years, function(a){
+#       b = max(as.numeric(str_split_1(a, ', ')))
+#       b
+#     })
+#     max_year_cor = cor(x = cor_year_df$ps_performance_gain, 
+#                        y = max_acq_year)
+#     max_year_comp_lm = lm(cor_year_df$ps_performance_gain ~ max_acq_year)
+#     summary(max_year_comp_lm)
+#     
+#     
+#     plotting_tbl = tibble(gain = cor_year_df$ps_performance_gain, mean_acq_year, min_acq_year, max_acq_year) %>%
+#       pivot_longer(cols = c('mean_acq_year', 'min_acq_year', 'max_acq_year')
+#                    , names_to = 'acq_year'
+#                    , values_to = 'year')
+#     ggplot(plotting_tbl, aes(x = year, y = gain, color = acq_year)) +
+#       geom_point(alpha = 0.5) +  
+#       # geom_smooth(method = 'lm',
+#       #             formula = plotting_tbl$gain[plotting_tbl$acq_year == 'mean_acq_year'] ~ plotting_tbl$year[plotting_tbl$acq_year == 'mean_acq_year'])
+#       geom_smooth(
+#         data = subset(plotting_tbl, acq_year == "min_acq_year"),
+#         method = "lm"
+#         , se = F
+#         , aes(color = "min_acq_year")
+#       ) +
+#       geom_smooth(
+#         data = subset(plotting_tbl, acq_year == "mean_acq_year"),
+#         method = "lm"
+#         , se = F
+#         , aes(color = "mean_acq_year")
+#       ) +
+#       geom_smooth(
+#         data = subset(plotting_tbl, acq_year == "max_acq_year"),
+#         method = "lm"
+#         , se = F
+#         , aes(color = "max_acq_year")
+#       )
+#     
+#     #performance gain versus publication year
+#     pub_year_psgain_lm = lm(cor_year_df$ps_performance_gain ~ cor_year_df$Publication.Year)
+#     summary(pub_year_psgain_lm)
+#     
+#     #sentinel_2 versus data acquisition year
+#     cor_year_df$mean_acq_year = mean_acq_year
+#     s2_mean_acq_year_lm = lm(ps_performance_gain ~ mean_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Sentinel-2'))
+#     a = summary(s2_mean_acq_year_lm)
+#     
+#     cor_year_df$min_acq_year = min_acq_year
+#     s2_min_acq_year_lm = lm(ps_performance_gain ~ min_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Sentinel-2'))
+#     b = summary(s2_min_acq_year_lm)
+#     
+#     cor_year_df$max_acq_year = max_acq_year
+#     s2_max_acq_year_lm = lm(ps_performance_gain ~ max_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Sentinel-2'))
+#     c = summary(s2_max_acq_year_lm)
+#     
+#     acq_year_var = c('mean_acq_year', 'min_acq_year', 'max_acq_year')
+#     
+#     s2_acq_year_tbl = tribble(
+#       ~acq_year_type, ~p_value, ~r2,
+#       as.character(a$terms[[3]]), a$coefficients[2,4], a$r.squared,
+#       as.character(b$terms[[3]]), b$coefficients[2,4], b$r.squared,
+#       as.character(c$terms[[3]]), c$coefficients[2,4], c$r.squared
+#     )
+#     
+#     #Landsat-8 versus acquisition year (no significant findings)
+#     L8_mean_acq_year_lm = lm(ps_performance_gain ~ mean_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Landsat-8'))
+#     summary(L8_mean_acq_year_lm)
+#     
+#     L8_min_acq_year_lm = lm(ps_performance_gain ~ min_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Landsat-8'))
+#     summary(L8_min_acq_year_lm)
+#     
+#     L8_max_acq_year_lm = lm(ps_performance_gain ~ max_acq_year, data = cor_year_df %>% filter(RS_dataset_name == 'Landsat-8'))
+#     summary(L8_max_acq_year_lm)
+#     
+#     #graph Sentinel-2 performance gain versus data acquisition year ***
+#     
+#     
+#     intercept = s2_max_acq_year_lm$coefficients[1]
+#     coef = s2_max_acq_year_lm$coefficients[2]
+#     
+#     ggplot(cor_year_df %>% filter(RS_dataset_name == 'Sentinel-2'), aes(x = max_acq_year, y = ps_performance_gain))+
+#       geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
+#       geom_smooth(method = 'lm'
+#                   ,se = F)+
+#       geom_point(aes(color = RS_compare_application)
+#                  , alpha = 0.5
+#                  ,size = 2.5
+#       )+
+#       scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
+#                          # , limits = c(-0.53, 0.53)
+#                          # , limits = c(-0.53, 0.4)
+#       )+
+#       # scale_x_discrete(labels = label_wrap(12)) +
+#       labs(
+#         y = 'Performance gain',
+#         color = 'Application category',
+#         shape = 'Statistic',
+#         x = 'Planetscope data acquisition year (max)'
+#       )+
+#       # stat_regline_equation()+
+#       # geom_text(x = 2019, y = -0.3,
+#       #           label = paste0('y = ',round(intercept, digits = 3),' + ',round(coef, digits = 3),'x'
+#       #                          ,'\nr2 = ',round(s2_acq_year_tbl$r2[3],digits=3),', p = ',round(s2_acq_year_tbl$p_value[3],digits=3))
+#       #           ,fontface = "plain"  # Use plain font
+#       #           ,family = "sans"  # Set font family
+#       #           )+
+#       annotate(
+#         "text",
+#         x = 2018, 
+#         y = -0.3,
+#         label = paste0('y = ', round(intercept, digits = 3), ' + ', round(coef, digits = 3), 'x',
+#                        '\nr² = ', round(s2_acq_year_tbl$r2[3], digits = 3), ', p = ', round(s2_acq_year_tbl$p_value[3], digits = 3)),
+#         hjust = 0,  # Horizontal justification
+#         vjust = 0,  # Vertical justification
+#         size = 4,   # Adjust text size as needed
+#         fontface = "plain",  # Set font to plain
+#         family = "sans"  # Set font family
+#       ) +
+#       scale_color_manual(values = application_colors)+
+#       theme_classic()
+#     
+#   }  
+#   
+#   #application
+#   {
+#     n_application_comparisons = rscompare2_df_long %>% 
+#       group_by(RS_compare_application) %>% 
+#       summarise(n_application_comparisons = n())
+#     
+#     
+#     n_pubs_comparisons = rscompare2_df %>% 
+#       group_by(RS_compare_application) %>% 
+#       summarise(n_publication_comparisons = n())
+#     
+#     rscompare2_df_long = rscompare2_df_long %>% 
+#       merge(n_application_comparisons) %>%
+#       merge(n_pubs_comparisons) %>%
+#       mutate(RS_compare_application_label = paste0(RS_compare_application, '(',n_application_comparisons,n_publication_comparisons,')'))
+#     
+#     # application
+#     {
+#       
+#       
+#       ggplot(data = rscompare2_df_long %>% filter(n_application_comparisons > 4),
+#              aes(
+#                x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = F),
+#                color = RS_compare_application_label,
+#                label = title_id_number,
+#                y = ps_performance_gain
+#              )) +
+#         #add boxplot
+#         # geom_boxplot( 
+#         #   # data = rscompare2_df_long %>% 
+#         #   #               filter(RS_dataset_name %in% rs_compare_pubs_summ$RS_dataset_name[rs_compare_pubs_summ$count > 1])
+#         #   # ,
+#         #   color = 'grey50'
+#         #   ,outliers = F
+#         # )+
+#         #plot lines between categories
+#         geom_vline(xintercept = 1.5 + 1:length(unique(rscompare2_df_long$RS_dataset_name))-1, color = 'lightgrey', linetype = "solid", size = 0.5) +
+#         #plot vline to separate lower spatial resolution datasets from higher spatial resolution
+#         geom_vline(xintercept = 1.5+4)+
+#         #plot horizontal line at performance gain = 0
+#         geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
+#         #plot points
+#         geom_jitter(
+#           size = 5
+#           ,alpha = 0.5
+#           ,width = 0.5
+#           ,aes(color = RS_compare_application_label)
+#         ) +
+#         geom_text_repel(
+#           size = 3,
+#           max.overlaps = Inf,
+#           seed = 123,
+#           min.segment.length = 0.4,
+#           segment.size = 0.3,
+#           force = 3.5,
+#           force_pull = 0.5,
+#           show.legend = F
+#         )+
+#         scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
+#                            # , limits = c(-0.53, 0.53)
+#                            # , limits = c(-0.53, 0.4)
+#         )+
+#         scale_x_discrete(labels = label_wrap(12)) +
+#         labs(
+#           y = 'Performance gain',
+#           color = 'Application (# comparisons, # publications)',
+#           shape = 'Statistic'
+#         )+
+#         scale_color_manual(values = colors14_2)+
+#         theme_classic()+
+#         theme(
+#           axis.title.x = element_blank()
+#           ,axis.text.x = element_text(angle = 30,hjust = 1)
+#           # ,axis.text.x = element_blank()
+#           # ,axis.line.x = element_blank()
+#           # ,axis.ticks.x = element_blank()
+#         )+
+#         guides(size = 'none')
+#       
+#       }
+#     
+#     # time series
+#     {
+#       rscompare2_df_long$PS_timeseries = toupper(rscompare2_df_long$PS_timeseries)
+#       #ggplot
+#       {
+#         
+#         
+#         ggplot(data = rscompare2_df_long 
+#                # %>% filter(n_application_comparisons > 3)
+#                ,aes(
+#                  x = fct_reorder(RS_dataset_name, spatial_resolution, .desc = F),
+#                  shape = toupper(PS_timeseries),
+#                  color = RS_compare_application_label,
+#                  label = title_id_number,
+#                  y = ps_performance_gain
+#                )) +
+#           #add boxplot
+#           # geom_boxplot( 
+#           #   # data = rscompare2_df_long %>% 
+#           #   #               filter(RS_dataset_name %in% rs_compare_pubs_summ$RS_dataset_name[rs_compare_pubs_summ$count > 1])
+#           #   # ,
+#           #   color = 'grey50'
+#           #   ,outliers = F
+#           # )+
+#           #plot lines between categories
+#           geom_vline(xintercept = 1.5 + 1:length(unique(rscompare2_df_long$RS_dataset_name))-1, color = 'lightgrey', linetype = "solid", size = 0.5) +
+#           #plot vline to separate lower spatial resolution datasets from higher spatial resolution
+#           geom_vline(xintercept = 1.5+4)+
+#           #plot horizontal line at performance gain = 0
+#           geom_hline(yintercept = 0, color = 'black', linetype = 'dashed')+
+#           #plot points
+#           geom_jitter(
+#             size = 5
+#             ,alpha = 0.5
+#             ,width = 0.3
+#             # ,aes(color = RS_compare_application_label)
+#           ) +
+#           geom_text_repel(
+#             size = 3,
+#             max.overlaps = Inf,
+#             seed = 123,
+#             min.segment.length = 0.4,
+#             segment.size = 0.3,
+#             force = 3.5,
+#             force_pull = 0.5,
+#             show.legend = F
+#           )+
+#           scale_y_continuous(breaks = seq(-1, 1, by = 0.1)
+#                              # , limits = c(-0.53, 0.53)
+#                              # , limits = c(-0.53, 0.4)
+#           )+
+#           scale_x_discrete(labels = label_wrap(12)) +
+#           labs(
+#             y = 'Performance gain',
+#             color = 'Application category',
+#             shape = 'Timeseries used'
+#           )+
+#           scale_color_manual(values = colors14_2)+
+#           theme_classic()+
+#           theme(
+#             axis.title.x = element_blank()
+#             ,axis.text.x = element_text(angle = 30,hjust = 1)
+#             # ,axis.text.x = element_blank()
+#             # ,axis.line.x = element_blank()
+#             # ,axis.ticks.x = element_blank()
+#           )+
+#           guides(size = 'none')
+#       }
+#       
+#       #significance testing
+#       {
+#         #equal variances?
+#         leveneTest(ps_performance_gain ~ PS_timeseries, data = rscompare2_df_long)
+#         shapiro.test(rscompare2_df_long$ps_performance_gain)
+#         
+#         timeseries_wilcox = wilcox.test(x = rscompare2_df_long$ps_performance_gain[rscompare2_df_long$PS_timeseries=='N'],
+#                                         y = rscompare2_df_long$ps_performance_gain[rscompare2_df_long$PS_timeseries=='Y'])
+#       }
+#     }
+#   }
+# }
 #---- RS comparison v3 ----
 
 #cleaning and main results
@@ -2216,12 +2253,24 @@ rs_compare_pubs_summ = rscompare2_df_long %>%
                                   ifelse(str_detect(Relative_RS_performance_2, '='), 'Same',
                                          'Worse'))) %>%
     mutate(RS_compared = str_replace_all(Relative_RS_performance_2,'PS| |<|>|=', '')) %>% #get RS data compared to PS
-    #relabel
-    mutate(RS_compared = str_replace(RS_compared, 'Aerial', 'Aer ')) %>%
-    mutate(RS_compared = str_replace(RS_compared, 'CBERS-4A', 'CB4A')) %>%
-    mutate(RS_compared = str_replace(RS_compared, 'FORMOSAT-2', 'FS2')) %>%
-    mutate(RS_compared = str_replace(RS_compared, 'PALSAR-2', 'PS2')) %>%
-    mutate(RS_compared = str_replace(RS_compared, 'WV', 'WV2'))
+    mutate(RS_compared_orig.name = RS_compared) |>
+    # #relabel
+    # mutate(RS_compared = str_replace(RS_compared, 'Aerial', 'Aer ')) %>%
+    # mutate(RS_compared = str_replace(RS_compared, 'CBERS-4A', 'CB4A')) %>%
+    # mutate(RS_compared = str_replace(RS_compared, 'FORMOSAT-2', 'FS2')) %>%
+    # mutate(RS_compared = str_replace(RS_compared, 'PALSAR-2', 'PS2')) %>%
+    #clean full names
+    mutate(RS_compared_orig.name = str_replace_all(RS_compared, c(
+      'S2' = 'Sentinel-2',
+      'WV' = 'WorldView-',
+      'Aerial' = 'Aerial ',
+      'L8' = 'Landsat-8',
+      'K3' = 'KOMPSAT-3',
+      'RE' = 'RapidEye'
+    ))) |>
+    mutate(RS_compared_orig.name = str_replace(RS_compared_orig.name, 'WorldView-$', 'WorldView-2'))
+  relative_rs_df_long$RS_compared = relative_rs_df_long$RS_compared_orig.name
+    
   
   
   
@@ -2254,7 +2303,7 @@ rs_compare_pubs_summ = rscompare2_df_long %>%
 
 #reasons behind comparison results
 {
-  # spectral resolution
+  # spectral resolution (sensors on x axis)
   {
     relative_rs_df_long = relative_rs_df_long %>%
       mutate(same_feats = ifelse(Non_PS_bands_in_other_RS_models == 'No',
@@ -2281,27 +2330,184 @@ rs_compare_pubs_summ = rscompare2_df_long %>%
       )
   }
   
-  #application
+  #application (facetted bar, sensors on y axis)
   {
     relative_rs_app_summ = relative_rs_df_long %>%
+      cSplit(splitCols = 'Application_to_agg', sep = ', ', direction = 'long') |>
+      distinct() |>
       group_by(RS_compared, PS_comparison, Application_to_agg) %>%
-      summarise(count = n())
+      summarise(count = n()) |>
+      left_join(rs_type_df |> 
+                  mutate(RS_systems = str_replace(RS_systems, 'Harmonized Landsat Sentinel-2', 'HLS')) |>
+                  mutate(RS_systems = str_replace(RS_systems, 'Rapideye', 'RapidEye')) |>
+                  mutate(RS_systems = str_replace(RS_systems, 'multispectral', 'MS')) |>
+                  mutate(RS_systems = str_replace(RS_systems, 'hyperspectral', 'HS')) |>
+                  rename(RS_compared = RS_systems)
+      ) |> 
+      # mutate(spatial_resolution = as.factor(spatial_resolution)) |> 
+      mutate(RS_label = ifelse(str_detect(RS_compared, 'Aerial'),
+                               paste0(RS_compared, '(<0.5)'),
+                               paste0(RS_compared,' (',spatial_resolution,')')))
+      
     
     ggplot(relative_rs_app_summ, aes(y = count, x = PS_comparison, fill = Application_to_agg)) +
       geom_col() +  # Use geom_col for pre-summarized data
       facet_grid(vars(RS_compared)) +
       labs(x = "Planetscope analysis comparison"
            , y = "Number of articles"
+           , fill = 'Application category'
            # , title = "Comparison of Remote Sensing Datasets"
       ) +
       scale_fill_manual(values = application_colors)+
       theme_minimal() +
       theme(
-        strip.text = element_text(angle = 90)  # Keep the facet labels horizontal
-        , panel.background = element_rect(fill = NA, color = "black") # add lines around facet panels
+        strip.text.y = element_text(angle = 0)  # Keep the facet labels horizontal
+         ,panel.background = element_rect(fill = NA, color = "black") # add lines around facet panels
         # , legend.position = 'none'
       )
+    
   }
+  
+  #application (facetted bar, sensors on x axis)
+  {
+    relative_rs_app_summ = relative_rs_df_long %>%
+      cSplit(splitCols = 'Application_to_agg', sep = ', ', direction = 'long') |>
+      distinct() |>
+      group_by(RS_compared, PS_comparison, Application_to_agg) %>%
+      summarise(count = n()) |>
+      left_join(rs_type_df |> 
+                  mutate(RS_systems = str_replace(RS_systems, 'Harmonized Landsat Sentinel-2', 'HLS')) |>
+                  mutate(RS_systems = str_replace(RS_systems, 'Rapideye', 'RapidEye')) |>
+                  mutate(RS_systems = str_replace(RS_systems, 'multispectral', 'MS')) |>
+                  mutate(RS_systems = str_replace(RS_systems, 'hyperspectral', 'HS')) |>
+                  rename(RS_compared = RS_systems)
+      ) |> 
+      # mutate(spatial_resolution = as.factor(spatial_resolution)) |> 
+      mutate(
+        # Format spatial resolution with proper decimal places
+        formatted_resolution = case_when(
+          is.na(spatial_resolution) ~ "Unknown",
+          spatial_resolution < 10 ~ paste0(sprintf("%.1f", spatial_resolution), "m"),
+          TRUE ~ paste0(sprintf("%.0f", spatial_resolution), "m")
+        ),
+        # Create RS_label with formatted resolution
+        RS_label = ifelse(str_detect(RS_compared, 'Aerial'),
+                          paste0(RS_compared, '(<0.3m)'),
+                          paste0(RS_compared, ' (', formatted_resolution, ')'))
+      )
+    
+    library(ggtext)
+    
+    sensor_colors = c(
+      'Multispectral' = 'black'
+      ,'Hyperspectral' = 'darkblue'
+      ,'RGB' = 'darkgreen'
+      ,'RADAR' = 'darkred'
+    )
+    
+    rel_base = ggplot(relative_rs_app_summ |>
+                        mutate(RS_label_coloured = paste0("<span style='color:", sensor_colors[sensor_type], "'>", RS_label, "</span>"))
+                      , aes(x = reorder(RS_label, -spatial_resolution), y = count)
+                      )
+    
+    rel_base +
+      geom_col(aes(y = count, x = reorder(RS_label, -spatial_resolution), fill = Application_to_agg)) +  # Use geom_col for pre-summarized data
+      # geom_point(aes(color = sensor_type), alpha = 0, size = 0) + #invisible points for colour legend
+      # scale_color_manual(values = sensor_colors, name = "Sensor Type") +
+      facet_grid(vars(PS_comparison)
+                 # ~spatial_resolution
+                 ) +
+      labs(x = "Planetscope analysis comparison"
+           , y = "Number of articles"
+           , fill = 'Application category'
+           # , title = "Comparison of Remote Sensing Datasets"
+      ) +
+      scale_fill_manual(values = application_colors)+
+      theme_minimal() +
+      theme(
+        strip.text.y = element_text(angle = 0)  # Keep the facet labels horizontal
+        ,axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0)
+        ,panel.background = element_rect(fill = NA, color = "black") # add lines around facet panels
+        # , legend.position = 'none'
+      ) 
+    
+    # save.fig('Figure10')
+    ggsave(filename = paste0(figures_dir,'/','Figure10','.tiff')
+           , dpi = 600
+           ,width = 25
+           ,height = 18
+           ,units = 'cm')
+  }
+  
+  # spectral resolution (sensors on x axis)
+  {
+    relative_rs_app_summ = relative_rs_df_long %>%
+      mutate(same_feats = ifelse(Non_PS_bands_in_other_RS_models == 'No',
+                                 'Yes',
+                                 'No')) |>
+      cSplit(splitCols = 'Application_to_agg', sep = ', ', direction = 'long') |>
+      distinct() |>
+      group_by(RS_compared, PS_comparison, Application_to_agg, same_feats) %>%
+      summarise(count = n()) |>
+      left_join(rs_type_df |> 
+                  mutate(RS_systems = str_replace(RS_systems, 'Harmonized Landsat Sentinel-2', 'HLS')) |>
+                  mutate(RS_systems = str_replace(RS_systems, 'Rapideye', 'RapidEye')) |>
+                  mutate(RS_systems = str_replace(RS_systems, 'multispectral', 'MS')) |>
+                  mutate(RS_systems = str_replace(RS_systems, 'hyperspectral', 'HS')) |>
+                  rename(RS_compared = RS_systems)
+      ) |> 
+      # mutate(spatial_resolution = as.factor(spatial_resolution)) |> 
+      mutate(
+        # Format spatial resolution with proper decimal places
+        formatted_resolution = case_when(
+          is.na(spatial_resolution) ~ "Unknown",
+          spatial_resolution < 10 ~ paste0(sprintf("%.1f", spatial_resolution), "m"),
+          TRUE ~ paste0(sprintf("%.0f", spatial_resolution), "m")
+        ),
+        # Create RS_label with formatted resolution
+        RS_label = ifelse(str_detect(RS_compared, 'Aerial'),
+                          paste0(RS_compared, '(<0.3m)'),
+                          paste0(RS_compared, ' (', formatted_resolution, ')'))
+      ) 
+    
+    
+    library(ggtext)
+    
+    sensor_colors = c(
+      'Multispectral' = 'black'
+      ,'Hyperspectral' = 'darkblue'
+      ,'RGB' = 'darkgreen'
+      ,'RADAR' = 'darkred'
+    )
+    
+    rel_base = ggplot(relative_rs_app_summ |>
+                        mutate(RS_label_coloured = paste0("<span style='color:", sensor_colors[sensor_type], "'>", RS_label, "</span>"))
+                      , aes(x = reorder(RS_label, -spatial_resolution), y = count)
+    )
+    
+    rel_base +
+      geom_col(aes(y = count, x = reorder(RS_label, -spatial_resolution), fill = as.factor(same_feats))) +  # Use geom_col for pre-summarized data
+      # geom_point(aes(color = sensor_type), alpha = 0, size = 0) + #invisible points for colour legend
+      # scale_color_manual(values = sensor_colors, name = "Sensor Type") +
+      facet_grid(vars(PS_comparison)
+                 # ~spatial_resolution
+      ) +
+      labs(x = "Planetscope analysis comparison"
+           , y = "Number of articles"
+           , fill = 'Same predictor variables'
+           # , title = "Comparison of Remote Sensing Datasets"
+      ) +
+      # scale_fill_manual(values = application_colors)+
+      theme_minimal() +
+      theme(
+        strip.text.y = element_text(angle = 0)  # Keep the facet labels horizontal
+        ,axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0)
+        ,panel.background = element_rect(fill = NA, color = "black") # add lines around facet panels
+        # , legend.position = 'none'
+      ) 
+    
+  }
+  
 }
 
 #####--------------------------------- How is PS being analyzed -------------------------------------
@@ -2385,7 +2591,7 @@ ggplot(feats_summ, aes(x = reorder(relabel, -n), y = n)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)# Rotate x-axis labels
         ,plot.margin = margin(,,,0.7,'cm')) #adjust left plot margin to fit axis text
 # coord_flip()  # Flip the coordinates to make y-axis horizontal
-save.fig('Figure7')
+save.fig('features_barplot')
 }
 
 #features and applications
@@ -2467,7 +2673,7 @@ save.fig('Figure7')
     geom_point(
       color = simple_plot_col
     )+
-    labs(x = 'Application', y = 'Terrestrial ecosystem'
+    labs(x = 'Application category', y = 'Terrestrial ecosystem'
          , size = 'Publications'
     )+
     theme_minimal() +
@@ -2508,7 +2714,7 @@ save.fig('Figure7')
     mutate(Approach_method2 = str_replace_all(Approach_method2, 'MLC', 'Maximum likelihood classifier')) %>%
     mutate(Approach_method2 = str_replace_all(Approach_method2, 'OBIA', 'Object-based image analysis')) %>%
     mutate(Approach_method2 = str_replace_all(Approach_method2, 'MARS', 'Multivariate adaptive regression splines')) %>%
-    mutate(Approach_method2 = str_replace_all(Approach_method2, 'Otsu', 'Otsu method')) %>%
+    mutate(Approach_method2 = str_replace_all(Approach_method2, 'Otsu', 'Otsu\'s method')) %>%
     mutate(Approach_method2 = gsubfn("\\(([^\\)]+)\\)", 
                                      function(x) paste0("(", gsub(",", ";", x), ")"), 
                                      Approach_method2)) %>% #replace all commas inside of round brackets with semicolons
@@ -2769,7 +2975,7 @@ save.fig('Figure7')
       mutate(method_algorithm_to_agg = str_replace_all(method_algorithm_to_agg, 'MLC', 'Maximum likelihood classifier')) %>%
       mutate(method_algorithm_to_agg = str_replace_all(method_algorithm_to_agg, 'OBIA', 'Object-based image analysis')) %>%
       mutate(method_algorithm_to_agg = str_replace_all(method_algorithm_to_agg, 'MARS', 'Multivariate adaptive regression splines')) %>%
-      mutate(method_algorithm_to_agg = str_replace_all(method_algorithm_to_agg, 'Otsu', 'Otsu method')) %>%
+      mutate(method_algorithm_to_agg = str_replace_all(method_algorithm_to_agg, 'Otsu', 'Otsu\'s method')) %>%
       mutate(method_algorithm_to_agg = str_replace_all(method_algorithm_to_agg, 'GAM', 'Generalized additive model')) %>%
       filter(method_algorithm_cleaned == method_algorithm_to_agg) %>%  #remove rows where the performance doesn't match the application
       mutate(PS_model_performance_to_aggregate = ifelse(str_detect(PS_model_performance_to_aggregate, ":"),
@@ -2782,6 +2988,9 @@ save.fig('Figure7')
     mean_perf = c() #using a for loop since the mutate expression wasn't working very well for this
     for(i in 1:nrow(model_perf_df)){
       a = model_perf_df$PS_model_performance_to_aggregate[i]
+      
+      cat('\n',i,' --- ',a)
+      
       b = mean(
         as.numeric(
           str_split_1(a, ', ')
@@ -2885,7 +3094,7 @@ save.fig('Figure7')
                            # c('', 'gold', 'orange', 'tomato', 'red2','darkred', 'grey50')
                            # c("#FFFFB2", "#FED976", "#FEB24C", "#FD8D3C", "#F03B20", "#BD0026", 'grey50')
                            c(brewer.pal(n = 6, name = 'Spectral'),'grey50'))+
-      labs(x = 'Application', 
+      labs(x = 'Application category', 
            y = 'Algorithm or method'
            , color = 'Mean model performance'
            , size = 'Number of articles'
@@ -2898,7 +3107,7 @@ save.fig('Figure7')
                  , scales = 'free_y'
       ) +
       scale_size(name = 'Number of articles', range = c(2,7.9), breaks = c(3,6,9,12,15))+
-      labs(x = 'Application', 
+      labs(x = 'Application category', 
            y = 'Algorithm or method'
            , color = str_wrap('Mean model performance', width = 19)
            , size = 'Number of articles'
@@ -2911,7 +3120,7 @@ save.fig('Figure7')
         # ,axis.line = element_line()
         ,panel.background = element_rect(fill = NA, color = "black") # add lines around facet panels
       )
-    save.fig('Figure8')
+    save.fig('model_performance_applications')
     
   }
   
@@ -3009,7 +3218,7 @@ save.fig('Figure7')
                   xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
                   fill = 'grey20', alpha = 1, color = NA) +
         facet_grid(vars(algorithm_1), vars(algorithm_2)) +
-        labs(x = 'Algorithm 1 accuracy', y = 'Algorithm 2 accuracy', color = 'Application') +
+        labs(x = 'Algorithm 1 accuracy', y = 'Algorithm 2 accuracy', color = 'Application category') +
         # scale_y_continuous(limits = c(0.5,1))+
         # scale_x_continuous(limits = c(0.5,1))+
         theme_classic()+
@@ -3030,7 +3239,7 @@ save.fig('Figure7')
                   xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
                   fill = 'grey20', alpha = 1, color = NA) +
         facet_grid(vars(algorithm_1), vars(algorithm_2)) +
-        labs(x = 'Algorithm 1 goodness-of-fit', y = 'Algorithm 2 goodness-of-fit', color = 'Application') +
+        labs(x = 'Algorithm 1 goodness-of-fit', y = 'Algorithm 2 goodness-of-fit', color = 'Application category') +
         # scale_y_continuous(limits = c(0,1))+
         # scale_x_continuous(limits = c(0,1))+
         theme_classic()+
